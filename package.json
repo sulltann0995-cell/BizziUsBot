@@ -1,0 +1,21 @@
+{
+  "name": "bizzant-bizziusbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bizzant business assistant Telegram bot",
+  "main": "src/bot.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/bot.js",
+    "api": "node src/server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "check": "node --check src/bot.js && node --check src/server.js && node --check src/services.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "pg": "^8.13.1",
+    "telegraf": "^4.16.3"
+  }
+}
