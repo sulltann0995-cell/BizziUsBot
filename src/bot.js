@@ -5,7 +5,7 @@ if(!process.env.BOT_TOKEN)throw new Error('BOT_TOKEN is required');
 const bot=new Telegraf(process.env.BOT_TOKEN);
 const states=new Map();
 const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' UZS';
-const menu=()=>Markup.inlineKeyboard([
+const menu=()=>Markup.inlineKeyboard([\n ...(process.env.WEB_APP_URL?[[Markup.button.webApp('📱 Ilovani ochish',process.env.WEB_APP_URL)]]:[]),
  [Markup.button.callback('📊 Kunlik hisobot','summary:day'),Markup.button.callback('🏢 Bizneslar','businesses')],
  [Markup.button.callback('📅 Oylik hisobot','summary:month'),Markup.button.callback('🗓 Yillik hisobot','summary:year')],
  [Markup.button.callback('👥 Mijoz qo‘shish','add_customer'),Markup.button.callback('📋 Mijozlar','list_customers')],
