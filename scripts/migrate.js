@@ -7,7 +7,7 @@ const pool = require('../src/db');
   try {
     const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
     await pool.query(sql);
-    console.log('Bizzant database migration completed.');
+    console.log('BizziUs database migration completed.');
   } catch (error) {
     console.error('Database migration failed:', error);
     process.exitCode = 1;
