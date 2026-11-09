@@ -48,7 +48,7 @@ app.post('/api/profile',async(req,res)=>{
     if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz. Ilovani bot ichidan qayta oching.'});
     const role=String(req.body?.role||''),name=String(req.body?.name||'').trim(),rawPhone=String(req.body?.phone||'').trim(),region=String(req.body?.region||'').trim(),city=String(req.body?.city||'').trim();
     const phone=rawPhone.replace(/[^0-9+]/g,'');
-    if(!['customer','business'].includes(role)||name.length<2||name.length>100||!/^\\+?998\\d{9}$/.test(phone.replace(/^998/,'+998'))||!region||region.length>80||!city||city.length>80)return res.status(400).json({error:'Ma’lumotlarni to‘g‘ri kiriting.'});
+    if(!['customer','business'].includes(role)||name.length<2||name.length>100||!/^\+?998\d{9}$/.test(phone.replace(/^998/,'+998'))||!region||region.length>80||!city||city.length>80)return res.status(400).json({error:'Ma’lumotlarni to‘g‘ri kiriting.'});
     const user=await db.upsertUser(telegramUser);
     const updated=await db.updateUserProfile(user.id,role,name,phone,region,city);
     return res.json({ok:true,user:updated});
