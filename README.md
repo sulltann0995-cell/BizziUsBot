@@ -1,4 +1,4 @@
-# Bizzant — Your Business Assistant
+# BizziUsBot — Your Business Assistant
 
 Telegram-first business management assistant for small businesses. The Telegram bot is named **BizziUsBot**.
 
