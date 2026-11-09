@@ -6,7 +6,8 @@ const bot=new Telegraf(process.env.BOT_TOKEN);
 const states=new Map();
 const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' UZS';
 const menu=()=>Markup.inlineKeyboard([
- [Markup.button.callback('📊 Hisobot','summary'),Markup.button.callback('🏢 Bizneslar','businesses')],
+ [Markup.button.callback('📊 Kunlik hisobot','summary:day'),Markup.button.callback('🏢 Bizneslar','businesses')],
+ [Markup.button.callback('📅 Oylik hisobot','summary:month'),Markup.button.callback('🗓 Yillik hisobot','summary:year')],
  [Markup.button.callback('👥 Mijoz qo‘shish','add_customer'),Markup.button.callback('📋 Mijozlar','list_customers')],
  [Markup.button.callback('📦 Katalogga qo‘shish','add_item'),Markup.button.callback('🛍 Katalog','list_catalog')],
  [Markup.button.callback('🧾 Buyurtma yaratish','add_order'),Markup.button.callback('📑 Buyurtmalar','list_orders')],
@@ -61,9 +62,13 @@ bot.action('members',async ctx=>{
  const list=rows.map(x=>'• '+x.full_name+' — '+x.role+' (ID: '+x.telegram_id+')').join('\n');
  return ctx.reply('👨‍💼 Jamoa:\n'+(list||'Xodimlar yo‘q.'),Markup.inlineKeyboard([[Markup.button.callback('➕ Xodim qo‘shish','add_staff')]]));
 });
-bot.action('summary',async ctx=>{
- try{const d=await requireBusiness(ctx);await ctx.answerCbQuery();if(!d)return;const s=await db.summary(d.business.id);
- return ctx.reply('📊 Bugungi hisobot — '+d.business.name+'\n\n🧾 Buyurtmalar: '+s.orders.count+' ('+money(s.orders.total)+')\n💳 To‘lovlar: '+money(s.payments.total)+'\n📅 Bugungi qabullar: '+s.appointments.count+'\n👥 Jami mijozlar: '+s.customers.count);
+bot.action(/^summary:(day|month|year)$/,async ctx=>{
+ try{
+  const d=await requireBusiness(ctx);await ctx.answerCbQuery();if(!d)return;
+  const period=ctx.match[1],s=await db.periodSummary(d.business.id,period);
+  const label={day:'Bugungi',month:'Oylik',year:'Yillik'}[period];
+  const customerCount=(await db.summary(d.business.id)).customers.count;
+  return ctx.reply('📊 '+label+' hisobot — '+d.business.name+'\\n\\n🧾 Buyurtmalar: '+s.orders.count+' ('+money(s.orders.total)+')\\n💳 To‘lovlar: '+money(s.payments.total)+'\\n📅 Qabullar: '+s.appointments.count+'\\n👥 Jami mijozlar: '+customerCount);
  }catch(e){console.error(e);return ctx.reply('Hisobotni olishda xatolik.');}
 });
 bot.on('text',async ctx=>{
