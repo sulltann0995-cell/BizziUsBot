@@ -37,8 +37,22 @@ app.post('/api/auth',async(req,res)=>{
     const [summary,customers,catalog,orders,appointments]=await Promise.all([
       db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
     ]);
-    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,role:business.role},summary,customers,catalog,orders,appointments});
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,role:business.role},summary,customers,catalog,orders,appointments});
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
+});
+
+app.post('/api/business',async(req,res)=>{
+  try{
+    const telegramUser=verifyTelegramInitData(req.body?.initData);
+    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz. Ilovani bot ichidan qayta oching.'});
+    const name=String(req.body?.name||'').trim();
+    const category=String(req.body?.category||'other');
+    const allowed=['barber','dentist','education','clinic','retail','restaurant','auto_service','other'];
+    if(name.length<2||name.length>80||!allowed.includes(category))return res.status(400).json({error:'Biznes nomi yoki yo‘nalishi noto‘g‘ri.'});
+    const user=await db.upsertUser(telegramUser);
+    const business=await db.createBusiness(user,name,category);
+    return res.json({ok:true,business:{id:business.id,name:business.name,category:business.category,role:'owner'}});
+  }catch(e){console.error('Business creation error:',e);return res.status(500).json({error:'Biznesni yaratishda xatolik.'});}
 });
 app.get('/',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 const port=Number(process.env.PORT||3000);
