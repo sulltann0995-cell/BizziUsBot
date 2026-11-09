@@ -34,6 +34,10 @@ async function selectBusiness(userId,businessId) {
   const {rowCount}=await pool.query('UPDATE users SET selected_business_id=$1 WHERE id=$2 AND EXISTS(SELECT 1 FROM memberships WHERE user_id=$2 AND business_id=$1)',[businessId,userId]);
   return rowCount===1;
 }
+async function leaveBusiness(userId) {
+  const {rowCount}=await pool.query('UPDATE users SET selected_business_id=NULL WHERE id=$1',[userId]);
+  return rowCount===1;
+}
 async function currentBusiness(userId) {
   const {rows}=await pool.query(`SELECT b.*,m.role FROM users u JOIN memberships m ON m.user_id=u.id JOIN businesses b ON b.id=m.business_id WHERE u.id=$1 AND b.id=u.selected_business_id`,[userId]);
   return rows[0]||null;
@@ -100,4 +104,4 @@ async function summary(businessId) {
   ]);
   return {orders:o.rows[0],payments:p.rows[0],appointments:a.rows[0],customers:c.rows[0]};
 }
-module.exports={pool,periodSummary,upsertUser,listBusinesses,createBusiness,selectBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
+module.exports={pool,periodSummary,upsertUser,listBusinesses,createBusiness,selectBusiness,leaveBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
