@@ -90,7 +90,7 @@ bot.on('text',async ctx=>{
   else if(state==='staff'){
    if(!['owner','admin'].includes(business.role))return ctx.reply('Xodim qo‘shish huquqi yo‘q.');
    const telegramId=p[0],role=p[1]||'staff';if(!/^\d{5,20}$/.test(telegramId)||!['admin','staff'].includes(role))return ctx.reply('Format: Telegram ID | admin yoki staff');
-   try{await db.addStaffByTelegramId(business.id,telegramId,role);}catch(e){if(e.message==='USER_NOT_FOUND')return ctx.reply('Bu foydalanuvchi hali botni /start qilmagan.');throw e;}
+   try{await db.addStaffByTelegramId(business.id,telegramId,role);}catch(e){if(e.message==='USER_NOT_FOUND')return ctx.reply('Bu foydalanuvchi hali botni /start qilmagan.');if(e.message==='ALREADY_MEMBER')return ctx.reply('Bu foydalanuvchi ushbu biznes jamoasida allaqachon bor.');throw e;}
   }
   states.delete(ctx.from.id);await ctx.reply('✅ Ma’lumot saqlandi.',Markup.removeKeyboard());return ctx.reply('Boshqaruv paneli:',menu());
  }catch(e){console.error(e);return ctx.reply('Saqlashda xatolik. Ma’lumotlarni tekshirib qayta urinib ko‘ring.');}
