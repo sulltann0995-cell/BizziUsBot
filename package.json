@@ -1,8 +1,8 @@
 {
-  "name": "bizzant-bizziusbot",
+  "name": "bizziusbot",
   "version": "1.0.0",
   "private": true,
-  "description": "Bizzant business assistant Telegram bot",
+  "description": "BizziUsBot business assistant Telegram bot",
   "main": "src/bot.js",
   "engines": {
     "node": ">=20"
