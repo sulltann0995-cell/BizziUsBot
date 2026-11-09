@@ -32,12 +32,12 @@ app.post('/api/auth',async(req,res)=>{
     const telegramUser=verifyTelegramInitData(req.body?.initData);
     if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz yoki muddati tugagan. Mini Appni bot ichidan qayta oching.'});
     const user=await db.upsertUser(telegramUser);
-    const business=await db.currentBusiness(user.id);
-    if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:null,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
+    const [business,businesses]=await Promise.all([db.currentBusiness(user.id),db.listBusinesses(user.id)]);
+    if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:null,businesses,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
     const [summary,customers,catalog,orders,appointments]=await Promise.all([
       db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
     ]);
-    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,role:business.role},summary,customers,catalog,orders,appointments});
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,role:business.role},businesses,summary,customers,catalog,orders,appointments});
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
 });
 
@@ -53,6 +53,19 @@ app.post('/api/business',async(req,res)=>{
     const business=await db.createBusiness(user,name,category);
     return res.json({ok:true,business:{id:business.id,name:business.name,category:business.category,role:'owner'}});
   }catch(e){console.error('Business creation error:',e);return res.status(500).json({error:'Biznesni yaratishda xatolik.'});}
+});
+
+app.post('/api/business/select',async(req,res)=>{
+  try{
+    const telegramUser=verifyTelegramInitData(req.body?.initData);
+    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});
+    const businessId=String(req.body?.businessId||'');
+    if(!/^[0-9a-f-]{36}$/i.test(businessId))return res.status(400).json({error:'Biznes identifikatori noto‘g‘ri.'});
+    const user=await db.upsertUser(telegramUser);
+    const ok=await db.selectBusiness(user.id,businessId);
+    if(!ok)return res.status(403).json({error:'Bu biznesga kirish huquqi yo‘q.'});
+    return res.json({ok:true});
+  }catch(e){console.error('Business selection error:',e);return res.status(500).json({error:'Biznesni almashtirishda xatolik.'});}
 });
 app.get('/',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 const port=Number(process.env.PORT||3000);
