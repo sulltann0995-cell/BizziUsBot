@@ -186,3 +186,9 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 /* Emoji interaction must win over earlier decorative CSS rules */
 .vertical-hero.sector-scene .sector-3d-fallback{pointer-events:auto!important;touch-action:none!important;animation:none!important;transform-style:preserve-3d;will-change:transform;z-index:9!important;cursor:grab!important;}
 .vertical-hero.sector-scene .sector-3d-fallback:active{cursor:grabbing!important;}
+
+/* Real anatomical GLB only in dentistry; other categories keep their original emoji artwork */
+.vertical-hero.sector-dentist #sector3dCanvas{display:block!important;z-index:6!important;pointer-events:auto!important;}
+.vertical-hero.sector-dentist .sector-3d-fallback{display:none!important;}
+.vertical-hero:not(.sector-dentist) #sector3dCanvas{display:none!important;}
+.vertical-hero .model-credit{display:block;grid-column:1/-1;font-size:8px;letter-spacing:.08em;color:rgba(190,205,215,.48);text-align:right;margin-top:-8px;}
