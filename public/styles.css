@@ -106,3 +106,12 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 @keyframes sectorModalIn{from{opacity:0;transform:translateY(18px) scale(.96);filter:blur(8px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 @keyframes sectorSymbolFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
 @media(max-width:720px){.sector-switch-btn{right:10px;top:9px;padding:8px 10px;font-size:8px;letter-spacing:1px}.sector-switch-btn span{width:18px;height:18px}.vertical-hero{padding-top:47px}.sector-grid{grid-template-columns:1fr 1fr;gap:8px}.sector-option{min-height:90px;padding:11px;gap:9px}.sector-option-icon{flex-basis:36px;height:36px;font-size:21px;border-radius:11px}.sector-option-copy strong{font-size:10px}.sector-option-copy small{font-size:8px}.sector-option-arrow{font-size:14px}.sector-modal{padding:30px 20px 22px}.sector-modal h2{font-size:22px}}
+
+/* Animated 3D sector scenes */
+.sector-3d-stage{position:relative;z-index:1;width:190px;height:150px;flex:0 0 190px;display:grid;place-items:center;perspective:900px}
+#sector3dCanvas{width:190px;height:150px;display:block;position:relative;z-index:2;filter:drop-shadow(0 12px 18px var(--sector-soft))}
+.sector-3d-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:60px;filter:drop-shadow(0 0 22px var(--sector-soft));animation:sectorFloat 3s ease-in-out infinite}
+.sector-scene .vertical-hero-copy{max-width:60%}
+.scene-caption{position:absolute;right:20px;bottom:12px;color:var(--sector);font:8px 'DM Mono';letter-spacing:2px;opacity:.65}
+.model-glow{position:absolute;width:125px;height:25px;bottom:10px;left:34px;border-radius:50%;background:var(--sector);filter:blur(23px);opacity:.2}
+@media(max-width:720px){.sector-3d-stage{width:112px;height:116px;flex-basis:112px}.sector-3d-stage canvas{width:112px;height:116px}.sector-3d-fallback{font-size:45px}.sector-scene .vertical-hero-copy{max-width:calc(100% - 125px)}.scene-caption{font-size:6px;right:10px;bottom:7px}.sector-scene{gap:10px}}
