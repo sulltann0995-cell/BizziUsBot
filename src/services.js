@@ -25,7 +25,7 @@ async function createBusiness(user, name, category = 'other', region = null, cit
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
-    const { rows } = await c.query('INSERT INTO businesses(name,category,created_by,region,city) VALUES($1,$2,$3,$4,$5) RETURNING *',[name,category,user.id,region,city]);
+    const { rows } = await c.query('INSERT INTO businesses(name,category,created_by,region,city,phone) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[name,category,user.id,region,city,user.phone||null]);
     await c.query("INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,'owner')",[rows[0].id,user.id]);
     await c.query('UPDATE users SET selected_business_id=$1 WHERE id=$2',[rows[0].id,user.id]);
     await c.query('COMMIT');
