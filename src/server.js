@@ -67,6 +67,15 @@ app.post('/api/business/select',async(req,res)=>{
     return res.json({ok:true});
   }catch(e){console.error('Business selection error:',e);return res.status(500).json({error:'Biznesni almashtirishda xatolik.'});}
 });
+app.post('/api/business/leave',async(req,res)=>{
+  try{
+    const telegramUser=verifyTelegramInitData(req.body?.initData);
+    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});
+    const user=await db.upsertUser(telegramUser);
+    await db.leaveBusiness(user.id);
+    return res.json({ok:true});
+  }catch(e){console.error('Business exit error:',e);return res.status(500).json({error:'Biznesdan chiqishda xatolik.'});}
+});
 app.get('/',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 const port=Number(process.env.PORT||3000);
 app.listen(port,'0.0.0.0',()=>console.log('BizziUsBot web server listening on '+port));
