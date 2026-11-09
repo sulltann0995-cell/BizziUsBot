@@ -44,3 +44,30 @@ body[data-vertical] .stat-card:hover{border-color:color-mix(in srgb,var(--sector
 .business-card strong,.business-card small{display:block}.business-card strong{font-size:12px}.business-card small{font-size:9px;color:#999;margin-top:4px}.business-card>b{margin-left:auto;color:var(--sector)}
 .new-business-btn{width:100%;margin-top:15px;border:1px dashed var(--sector);border-radius:11px;background:var(--sector-soft);padding:14px;color:#fff;font-size:11px;font-weight:800}
 @media(max-width:720px){.vertical-hero{min-height:132px;padding:15px;gap:13px}.vertical-art{width:82px;height:82px;flex-basis:82px}.art-icon{font-size:36px}.vertical-hero p{font-size:9px}.vertical-kicker{font-size:8px}.switch-business-btn{font-size:9px;padding:8px}.top-actions{gap:7px}}
+
+/* Distinct animated identity for each business workspace */
+.leave-business-btn{width:100%;margin-top:10px;border:1px solid #6b3540;border-radius:11px;background:#211318;padding:13px;color:#ffdce1;font-size:11px;font-weight:800;cursor:pointer;transition:.22s}
+.leave-business-btn:hover{background:#35151e;border-color:#ff5368;transform:translateY(-2px)}
+.leave-business-btn:disabled{opacity:.55;cursor:wait}
+body[data-vertical="dentist"] .vertical-hero{background:radial-gradient(circle at 80% 50%,#45d7e833,transparent 30%),linear-gradient(110deg,#101a20,#101016)}
+body[data-vertical="dentist"] .art-icon{animation:toothBob 3s ease-in-out infinite}
+body[data-vertical="barber"] .vertical-hero{background:repeating-linear-gradient(135deg,#e8a34c08 0 12px,transparent 12px 24px),linear-gradient(110deg,#21190f,#101016)}
+body[data-vertical="barber"] .art-icon{animation:barberSpin 8s ease-in-out infinite}
+body[data-vertical="education"] .vertical-hero{background:radial-gradient(ellipse at 20% 80%,#9b83ff22,transparent 45%),linear-gradient(110deg,#171326,#101016)}
+body[data-vertical="education"] .art-icon{animation:bookFloat 3.5s ease-in-out infinite}
+body[data-vertical="clinic"] .vertical-hero{background:linear-gradient(120deg,#10221c,#101016)}
+body[data-vertical="clinic"] .art-icon{animation:clinicPulse 2.5s ease-in-out infinite}
+body[data-vertical="retail"] .vertical-hero{background:repeating-linear-gradient(90deg,#f2b84b08 0 1px,transparent 1px 28px),linear-gradient(110deg,#211b10,#101016)}
+body[data-vertical="retail"] .art-icon{animation:retailLift 2.8s ease-in-out infinite}
+body[data-vertical="restaurant"] .vertical-hero{background:radial-gradient(ellipse at 75% 50%,#ff76512b,transparent 40%),linear-gradient(110deg,#25150f,#101016)}
+body[data-vertical="restaurant"] .art-icon{animation:foodSway 3s ease-in-out infinite}
+body[data-vertical="auto_service"] .vertical-hero{background:repeating-linear-gradient(0deg,#7aa8ff08 0 1px,transparent 1px 22px),linear-gradient(110deg,#111a2a,#101016)}
+body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infinite}
+@keyframes toothBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.08)}}
+@keyframes barberSpin{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-5px)}}
+@keyframes bookFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-8px) rotate(5deg)}}
+@keyframes clinicPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px var(--sector-soft))}50%{transform:scale(1.12);filter:drop-shadow(0 0 22px var(--sector-soft))}}
+@keyframes retailLift{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(5deg)}}
+@keyframes foodSway{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg) translateY(-4px)}}
+@keyframes gearTurn{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){body[data-vertical] .art-icon{animation:none}}
