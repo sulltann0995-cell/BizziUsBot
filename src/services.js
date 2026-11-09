@@ -11,7 +11,10 @@ async function upsertUser(from) {
   );
   return rows[0];
 }
-async function updateUserProfile(userId,role,name,phone,region,city) {\n  const {rows}=await pool.query('UPDATE users SET account_role=$2,full_name=$3,phone=$4,region=$5,city=$6 WHERE id=$1 RETURNING id,telegram_id,username,full_name,account_role,phone,region,city',[userId,role,name,phone,region,city]);return rows[0];\n}\nasync function listBusinesses(userId) {
+async function updateUserProfile(userId,role,name,phone,region,city) {
+  const {rows}=await pool.query('UPDATE users SET account_role=$2,full_name=$3,phone=$4,region=$5,city=$6 WHERE id=$1 RETURNING id,telegram_id,username,full_name,account_role,phone,region,city',[userId,role,name,phone,region,city]);return rows[0];
+}
+async function listBusinesses(userId) {
   const { rows } = await pool.query(
     `SELECT b.id,b.name,b.category,b.region,b.city,m.role FROM memberships m
      JOIN businesses b ON b.id=m.business_id WHERE m.user_id=$1 ORDER BY b.created_at`, [userId]
