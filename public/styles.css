@@ -148,3 +148,21 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .model-hint{position:absolute;z-index:4;right:14px;top:14px;padding:7px 10px;border-radius:999px;background:#ffffff0b;border:1px solid #ffffff16;color:#b8b8c5;font-size:9px;font-weight:800;letter-spacing:.12em;pointer-events:none}
 .quick-action{min-height:76px;border-radius:16px!important;border:1px solid #ffffff12!important;background:linear-gradient(115deg,#ffffff0a,#ffffff03)!important;transition:transform .22s,border-color .22s,background .22s}.quick-action:active{transform:scale(.98)}.quick-action:hover{border-color:#ff344f66!important;background:linear-gradient(115deg,#ff344f18,#ffffff05)!important}
 @media(max-width:640px){.sector-3d-stage{min-height:255px;height:280px}.model-caption{bottom:28px;font-size:11px}.model-hint{font-size:8px;right:9px;top:9px}}
+
+/* FINAL OVERRIDE: the legacy #sector3dCanvas ID rules were constraining the new stage */
+.vertical-hero.sector-scene{display:grid;grid-template-columns:minmax(300px,1.05fr) minmax(240px,.95fr);align-items:center;gap:24px;min-height:390px;padding:24px 30px}
+.vertical-hero.sector-scene .sector-3d-stage{grid-column:1;grid-row:1;display:block;width:100%;height:350px;min-height:350px;max-width:none;flex:none}
+.vertical-hero.sector-scene #sector3dCanvas{display:block!important;width:100%!important;height:100%!important;max-width:none!important;min-width:0;position:relative;z-index:3;touch-action:none;cursor:grab}
+.vertical-hero.sector-scene #sector3dCanvas.is-dragging{cursor:grabbing}
+.vertical-hero.sector-scene .sector-3d-fallback{z-index:1;font-size:82px}
+.vertical-hero.sector-scene .model-glow{z-index:0;left:50%;transform:translateX(-50%);width:60%;bottom:30px}
+.vertical-hero.sector-scene .model-caption{z-index:5;bottom:22px}
+.vertical-hero.sector-scene .model-hint{z-index:5}
+.vertical-hero.sector-scene .vertical-hero-copy{grid-column:2;grid-row:1;max-width:none;width:auto;position:relative;z-index:4}
+@media(max-width:720px){
+ .vertical-hero.sector-scene{grid-template-columns:1fr;gap:8px;padding:18px 16px;min-height:0}
+ .vertical-hero.sector-scene .sector-3d-stage{grid-column:1;grid-row:1;width:100%;height:300px;min-height:300px}
+ .vertical-hero.sector-scene #sector3dCanvas{width:100%!important;height:100%!important}
+ .vertical-hero.sector-scene .vertical-hero-copy{grid-column:1;grid-row:2;max-width:none;width:100%;padding:0 4px 18px}
+ .vertical-hero.sector-scene .sector-3d-fallback{font-size:70px}
+}
