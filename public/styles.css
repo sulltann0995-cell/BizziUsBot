@@ -166,3 +166,5 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
  .vertical-hero.sector-scene .vertical-hero-copy{grid-column:1;grid-row:2;max-width:none;width:100%;padding:0 4px 18px}
  .vertical-hero.sector-scene .sector-3d-fallback{font-size:70px}
 }
+
+.sector-3d-stage .model-hint{display:none!important}.sector-3d-stage canvas{touch-action:none!important;pointer-events:auto!important;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
