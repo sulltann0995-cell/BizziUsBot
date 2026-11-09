@@ -93,3 +93,4 @@ ALTER TABLE businesses ADD COLUMN IF NOT EXISTS region TEXT;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS city TEXT;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS public_visible BOOLEAN NOT NULL DEFAULT TRUE;
 CREATE INDEX IF NOT EXISTS businesses_directory_idx ON businesses(public_visible, region, city, category);
+\nALTER TABLE users ADD COLUMN IF NOT EXISTS account_role TEXT CHECK (account_role IN ('customer','business'));\nALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;\nALTER TABLE users ADD COLUMN IF NOT EXISTS region TEXT;\nALTER TABLE users ADD COLUMN IF NOT EXISTS city TEXT;\nCREATE INDEX IF NOT EXISTS users_phone_idx ON users(phone);\n
