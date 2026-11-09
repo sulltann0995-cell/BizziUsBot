@@ -9,6 +9,7 @@ const app=express();
 app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:'1mb'}));
 app.use('/vendor',express.static(path.join(__dirname,'../node_modules/three/build')));
+app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/three/examples/js')));
 app.use(express.static(path.join(__dirname,'../public')));
 function verifyTelegramInitData(initData){
   if(typeof initData!=='string'||!initData||!process.env.BOT_TOKEN)return null;
