@@ -13,16 +13,16 @@ async function upsertUser(from) {
 }
 async function listBusinesses(userId) {
   const { rows } = await pool.query(
-    `SELECT b.id,b.name,b.category,m.role FROM memberships m
+    `SELECT b.id,b.name,b.category,b.region,b.city,m.role FROM memberships m
      JOIN businesses b ON b.id=m.business_id WHERE m.user_id=$1 ORDER BY b.created_at`, [userId]
   );
   return rows;
 }
-async function createBusiness(user, name, category = 'other') {
+async function createBusiness(user, name, category = 'other', region = null, city = null) {
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
-    const { rows } = await c.query('INSERT INTO businesses(name,category,created_by) VALUES($1,$2,$3) RETURNING *',[name,category,user.id]);
+    const { rows } = await c.query('INSERT INTO businesses(name,category,created_by,region,city) VALUES($1,$2,$3,$4,$5) RETURNING *',[name,category,user.id,region,city]);
     await c.query("INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,'owner')",[rows[0].id,user.id]);
     await c.query('UPDATE users SET selected_business_id=$1 WHERE id=$2',[rows[0].id,user.id]);
     await c.query('COMMIT');
@@ -104,4 +104,21 @@ async function summary(businessId) {
   ]);
   return {orders:o.rows[0],payments:p.rows[0],appointments:a.rows[0],customers:c.rows[0]};
 }
-module.exports={pool,periodSummary,upsertUser,listBusinesses,createBusiness,selectBusiness,leaveBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
+
+async function listDirectoryLocations(region=null) {
+  const regions=await pool.query("SELECT DISTINCT region FROM businesses WHERE public_visible=true AND region IS NOT NULL AND city IS NOT NULL ORDER BY region");
+  const cities=region?await pool.query("SELECT DISTINCT city FROM businesses WHERE public_visible=true AND region=$1 AND city IS NOT NULL ORDER BY city",[region]):{rows:[]};
+  return {regions:regions.rows.map(x=>x.region),cities:cities.rows.map(x=>x.city)};
+}
+async function listPublicBusinesses(region,city,category=null) {
+  const values=[region,city];let where="public_visible=true AND region=$1 AND city=$2";
+  if(category){values.push(category);where+=" AND category=$3";}
+  const {rows}=await pool.query("SELECT id,name,category,region,city,phone FROM businesses WHERE "+where+" ORDER BY name LIMIT 100",values);
+  return rows;
+}
+async function updateBusinessLocation(userId,businessId,region,city) {
+  const {rowCount}=await pool.query("UPDATE businesses b SET region=$3,city=$4 WHERE b.id=$2 AND EXISTS(SELECT 1 FROM memberships m WHERE m.business_id=b.id AND m.user_id=$1 AND m.role IN ('owner','admin'))",[userId,businessId,region,city]);
+  return rowCount===1;
+}
+
+module.exports={pool,periodSummary,upsertUser,listBusinesses,createBusiness,listDirectoryLocations,listPublicBusinesses,updateBusinessLocation,selectBusiness,leaveBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
