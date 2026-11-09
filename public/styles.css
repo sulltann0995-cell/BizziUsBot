@@ -174,3 +174,6 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .vertical-hero.sector-scene #sector3dCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;max-width:none!important;z-index:6!important;display:block!important;touch-action:none!important;pointer-events:auto!important;cursor:grab;}
 .vertical-hero.sector-scene #sector3dCanvas.is-dragging{cursor:grabbing;}
 .vertical-hero.sector-scene .sector-3d-fallback,.vertical-hero.sector-scene .model-caption{pointer-events:none!important;}
+
+/* Empty caption was rendering as the unexplained black pill under the model */
+.vertical-hero.sector-scene .model-caption:empty{display:none!important;}
