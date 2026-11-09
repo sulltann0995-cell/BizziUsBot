@@ -33,16 +33,16 @@ app.post('/api/auth',async(req,res)=>{
     if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz yoki muddati tugagan. Mini Appni bot ichidan qayta oching.'});
     const user=await db.upsertUser(telegramUser);
     const [business,businesses]=await Promise.all([db.currentBusiness(user.id),db.listBusinesses(user.id)]);
-    if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:null,businesses,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
+    if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username,account_role:user.account_role,phone:user.phone,region:user.region,city:user.city},business:null,businesses,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
     const [summary,customers,catalog,orders,appointments]=await Promise.all([
       db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
     ]);
-    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,region:business.region,city:business.city,role:business.role},businesses,summary,customers,catalog,orders,appointments});
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username,account_role:user.account_role,phone:user.phone,region:user.region,city:user.city},business:{id:business.id,name:business.name,category:business.category,region:business.region,city:business.city,role:business.role},businesses,summary,customers,catalog,orders,appointments});
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
 });
 
 
-app.get('/api/directory/locations',async(req,res)=>{
+app.post('/api/profile',async(req,res)=>{\n  try{\n    const telegramUser=verifyTelegramInitData(req.body?.initData);\n    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz. Ilovani bot ichidan qayta oching.'});\n    const role=String(req.body?.role||''),name=String(req.body?.name||'').trim(),rawPhone=String(req.body?.phone||'').trim(),region=String(req.body?.region||'').trim(),city=String(req.body?.city||'').trim();\n    const phone=rawPhone.replace(/[^0-9+]/g,'');\n    if(!['customer','business'].includes(role)||name.length<2||name.length>100||!/^\\+?998\\d{9}$/.test(phone.replace(/^998/,'+998'))||!region||region.length>80||!city||city.length>80)return res.status(400).json({error:'Ma’lumotlarni to‘g‘ri kiriting.'});\n    const user=await db.upsertUser(telegramUser);\n    const updated=await db.updateUserProfile(user.id,role,name,phone,region,city);\n    return res.json({ok:true,user:updated});\n  }catch(e){console.error('Profile registration error:',e);return res.status(500).json({error:'Ro‘yxatdan o‘tishda server xatoligi.'});}\n});\n\napp.get('/api/directory/locations',async(req,res)=>{
   try{const region=String(req.query.region||'').trim()||null;res.json(await db.listDirectoryLocations(region));}
   catch(e){console.error('Directory locations error:',e);res.status(500).json({error:'Hududlarni yuklashda xatolik.'});}
 });
