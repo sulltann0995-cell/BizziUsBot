@@ -14,7 +14,7 @@ function verifyTelegramInitData(initData){
   const params=new URLSearchParams(initData);
   const hash=params.get('hash');if(!hash)return null;
   params.delete('hash');
-  const dataCheckString=[...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\\n');
+  const dataCheckString=[...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
   const secret=crypto.createHmac('sha256','WebAppData').update(process.env.BOT_TOKEN).digest();
   const calculated=crypto.createHmac('sha256',secret).update(dataCheckString).digest('hex');
   const a=Buffer.from(calculated,'hex'),b=Buffer.from(hash,'hex');
