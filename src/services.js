@@ -81,6 +81,15 @@ async function addStaffByTelegramId(businessId,telegramId,role) {
 async function listMembers(businessId) {
   const {rows}=await pool.query('SELECT u.full_name,u.telegram_id,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.business_id=$1 ORDER BY CASE m.role WHEN \'owner\' THEN 1 WHEN \'admin\' THEN 2 ELSE 3 END',[businessId]);return rows;
 }
+async function periodSummary(businessId,period) {
+  const unit=period==='year'?'year':period==='month'?'month':'day';
+  const [orders,payments,appointments]=await Promise.all([
+    pool.query(`SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at>=date_trunc($2,CURRENT_DATE) AND created_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval`,[businessId,unit]),
+    pool.query(`SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM payments WHERE business_id=$1 AND paid_at>=date_trunc($2,CURRENT_DATE) AND paid_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval`,[businessId,unit]),
+    pool.query(`SELECT COUNT(*)::int count FROM appointments WHERE business_id=$1 AND starts_at>=date_trunc($2,CURRENT_DATE) AND starts_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval AND status='booked'`,[businessId,unit])
+  ]);
+  return {orders:orders.rows[0],payments:payments.rows[0],appointments:appointments.rows[0]};
+}
 async function summary(businessId) {
   const [o,p,a,c]=await Promise.all([
     pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at::date=CURRENT_DATE",[businessId]),
@@ -90,4 +99,4 @@ async function summary(businessId) {
   ]);
   return {orders:o.rows[0],payments:p.rows[0],appointments:a.rows[0],customers:c.rows[0]};
 }
-module.exports={pool,upsertUser,listBusinesses,createBusiness,selectBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
+module.exports={pool,periodSummary,upsertUser,listBusinesses,createBusiness,selectBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
