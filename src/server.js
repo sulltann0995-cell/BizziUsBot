@@ -41,6 +41,21 @@ app.post('/api/auth',async(req,res)=>{
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
 });
 
+
+app.get('/api/directory/locations',async(req,res)=>{
+  try{const region=String(req.query.region||'').trim()||null;res.json(await db.listDirectoryLocations(region));}
+  catch(e){console.error('Directory locations error:',e);res.status(500).json({error:'Hududlarni yuklashda xatolik.'});}
+});
+app.get('/api/directory',async(req,res)=>{
+  try{
+    const region=String(req.query.region||'').trim(),city=String(req.query.city||'').trim(),category=String(req.query.category||'').trim()||null;
+    if(!region||!city)return res.status(400).json({error:'Viloyat va shaharni tanlang.'});
+    const allowed=['barber','dentist','education','clinic','retail','restaurant','auto_service','other'];
+    if(category&&!allowed.includes(category))return res.status(400).json({error:'Yo‘nalish noto‘g‘ri.'});
+    res.json({businesses:await db.listPublicBusinesses(region,city,category)});
+  }catch(e){console.error('Public directory error:',e);res.status(500).json({error:'Bizneslarni yuklashda xatolik.'});}
+});
+
 app.post('/api/business',async(req,res)=>{
   try{
     const telegramUser=verifyTelegramInitData(req.body?.initData);
@@ -50,9 +65,25 @@ app.post('/api/business',async(req,res)=>{
     const allowed=['barber','dentist','education','clinic','retail','restaurant','auto_service','other'];
     if(name.length<2||name.length>80||!allowed.includes(category))return res.status(400).json({error:'Biznes nomi yoki yo‘nalishi noto‘g‘ri.'});
     const user=await db.upsertUser(telegramUser);
-    const business=await db.createBusiness(user,name,category);
+    const region=String(req.body?.region||'').trim();const city=String(req.body?.city||'').trim();
+    if(!region||region.length>80||!city||city.length>80)return res.status(400).json({error:'Viloyat va shaharni kiriting.'});
+    const business=await db.createBusiness(user,name,category,region,city);
     return res.json({ok:true,business:{id:business.id,name:business.name,category:business.category,role:'owner'}});
   }catch(e){console.error('Business creation error:',e);return res.status(500).json({error:'Biznesni yaratishda xatolik.'});}
+});
+
+
+app.post('/api/business/location',async(req,res)=>{
+  try{
+    const telegramUser=verifyTelegramInitData(req.body?.initData);
+    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});
+    const businessId=String(req.body?.businessId||''),region=String(req.body?.region||'').trim(),city=String(req.body?.city||'').trim();
+    if(!/^[0-9a-f-]{36}$/i.test(businessId)||!region||region.length>80||!city||city.length>80)return res.status(400).json({error:'Biznes, viloyat yoki shahar noto‘g‘ri.'});
+    const user=await db.upsertUser(telegramUser);
+    const ok=await db.updateBusinessLocation(user.id,businessId,region,city);
+    if(!ok)return res.status(403).json({error:'Bu biznes manzilini o‘zgartirish huquqi yo‘q.'});
+    return res.json({ok:true});
+  }catch(e){console.error('Business location update error:',e);return res.status(500).json({error:'Manzilni saqlashda xatolik.'});}
 });
 
 app.post('/api/business/select',async(req,res)=>{
