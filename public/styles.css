@@ -177,3 +177,8 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 
 /* Empty caption was rendering as the unexplained black pill under the model */
 .vertical-hero.sector-scene .model-caption:empty{display:none!important;}
+
+/* Restore the original sector emoji artwork; keep the existing 3D rotation code untouched */
+.vertical-hero.sector-scene #sector3dCanvas{display:none!important;}
+.vertical-hero.sector-scene .sector-3d-stage{position:relative;}
+.vertical-hero.sector-scene .sector-3d-fallback{display:grid!important;place-items:center;position:absolute;inset:0;z-index:8;font-size:clamp(104px,25vw,148px)!important;line-height:1;filter:drop-shadow(0 12px 24px var(--sector-soft));animation:sectorFloat 3s ease-in-out infinite;}
