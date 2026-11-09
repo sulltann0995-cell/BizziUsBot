@@ -7,6 +7,8 @@ const WEB_APP_URL=process.env.WEB_APP_URL||process.env.APP_URL||'https://bizzius
 if(!process.env.BOT_TOKEN)throw new Error('BOT_TOKEN is required');
 const bot=new Telegraf(process.env.BOT_TOKEN);
 const states=new Map();
+const categories=[['barber','💈 Sartaroshxona'],['dentist','🦷 Stomatologiya'],['education','🎓 O‘quv markazi'],['clinic','🏥 Klinika'],['retail','🛍 Do‘kon'],['restaurant','🍽 Restoran / Kafe'],['auto_service','🔧 Avtoservis'],['other','🏢 Boshqa biznes']];
+const categoryKeyboard=()=>Markup.inlineKeyboard(categories.reduce((rows,item,i)=>{if(i%2===0)rows.push([]);rows[rows.length-1].push(Markup.button.callback(item[1],'category:'+item[0]));return rows;},[]));
 const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' UZS';
 const menu=()=>Markup.inlineKeyboard([
  [Markup.button.webApp('📱 Ilovani ochish',WEB_APP_URL)],
@@ -38,7 +40,8 @@ bot.action('businesses',async ctx=>{
  const {user}=await context(ctx);const list=await db.listBusinesses(user.id);await ctx.answerCbQuery();
  return ctx.reply('Biznesni tanlang:',Markup.inlineKeyboard([...list.map(b=>[Markup.button.callback(b.name+' · '+b.role,'select:'+b.id)]),[Markup.button.callback('➕ Yangi biznes','new_business')]]));
 });
-bot.action('new_business',async ctx=>{await ctx.answerCbQuery();return ask(ctx,'new_business','Yangi biznes nomini yuboring:');});
+bot.action('new_business',async ctx=>{await ctx.answerCbQuery();return ctx.reply('Qaysi yo‘nalishda ishlaysiz? Tanlang:',categoryKeyboard());});
+bot.action(/^category:(barber|dentist|education|clinic|retail|restaurant|auto_service|other)$/,async ctx=>{await ctx.answerCbQuery();states.set(ctx.from.id,'new_business:'+ctx.match[1]);return ctx.reply('🏢 Biznesingiz nomini yuboring:');});
 const prompts={
  add_customer:['customer','Mijoz: Ism | Telefon\nMisol: Ali Valiyev | +998901234567'],
  add_item:['item','Katalog: Nomi | product yoki service | Narxi\nMisol: Soch olish | service | 50000'],
@@ -80,9 +83,9 @@ bot.on('text',async ctx=>{
  if(value==='❌ Bekor qilish'){states.delete(ctx.from.id);return ctx.reply('Bekor qilindi.',Markup.removeKeyboard());}
  try{
   const {user,business}=await context(ctx);
-  if(state==='new_business'){
+  if(state.startsWith('new_business:')){
    if(value.length<2||value.length>80)return ctx.reply('Biznes nomi 2–80 belgi bo‘lsin.');
-   const b=await db.createBusiness(user,value);states.delete(ctx.from.id);await ctx.reply('✅ '+b.name+' yaratildi. Siz biznes egasisiz.',Markup.removeKeyboard());return ctx.reply('Boshqaruv paneli:',menu());
+   const category=state.split(':')[1]||'other';const b=await db.createBusiness(user,value,category);states.delete(ctx.from.id);await ctx.reply('✅ '+b.name+' yaratildi. Siz biznes egasisiz.',Markup.removeKeyboard());return ctx.reply('Boshqaruv paneli:',menu());
   }
   if(!business){states.delete(ctx.from.id);return ctx.reply('Biznes tanlanmagan. /start bosing.');}
   const p=value.split('|').map(x=>x.trim());
