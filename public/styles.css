@@ -168,3 +168,9 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 }
 
 .sector-3d-stage .model-hint{display:none!important}.sector-3d-stage canvas{touch-action:none!important;pointer-events:auto!important;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+
+/* Reliable mobile interaction for the actual Three.js canvas */
+.vertical-hero.sector-scene .sector-3d-stage{position:relative;touch-action:none!important;overscroll-behavior:contain;}
+.vertical-hero.sector-scene #sector3dCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;max-width:none!important;z-index:6!important;display:block!important;touch-action:none!important;pointer-events:auto!important;cursor:grab;}
+.vertical-hero.sector-scene #sector3dCanvas.is-dragging{cursor:grabbing;}
+.vertical-hero.sector-scene .sector-3d-fallback,.vertical-hero.sector-scene .model-caption{pointer-events:none!important;}
