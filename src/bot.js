@@ -1,12 +1,15 @@
 require('dotenv').config();
 const {Telegraf,Markup}=require('telegraf');
+const fs=require('fs');
+const path=require('path');
 const db=require('./services');
+const WEB_APP_URL=process.env.WEB_APP_URL||process.env.APP_URL||'https://bizziusbot.onrender.com';
 if(!process.env.BOT_TOKEN)throw new Error('BOT_TOKEN is required');
 const bot=new Telegraf(process.env.BOT_TOKEN);
 const states=new Map();
 const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' UZS';
 const menu=()=>Markup.inlineKeyboard([
- ...(process.env.WEB_APP_URL?[[Markup.button.webApp('📱 Ilovani ochish',process.env.WEB_APP_URL)]]:[]),
+ [Markup.button.webApp('📱 Ilovani ochish',WEB_APP_URL)],
  [Markup.button.callback('📊 Kunlik hisobot','summary:day'),Markup.button.callback('🏢 Bizneslar','businesses')],
  [Markup.button.callback('📅 Oylik hisobot','summary:month'),Markup.button.callback('🗓 Yillik hisobot','summary:year')],
  [Markup.button.callback('👥 Mijoz qo‘shish','add_customer'),Markup.button.callback('📋 Mijozlar','list_customers')],
@@ -97,5 +100,14 @@ bot.on('text',async ctx=>{
  }catch(e){console.error(e);return ctx.reply('Saqlashda xatolik. Ma’lumotlarni tekshirib qayta urinib ko‘ring.');}
 });
 bot.catch(e=>console.error('Telegram bot error:',e));
-bot.launch().then(()=>console.log('BizziUsBot (BizziUsBot) is running')).catch(e=>{console.error(e);process.exit(1);});
+async function startBot(){
+ try{
+  const schema=fs.readFileSync(path.join(__dirname,'../db/schema.sql'),'utf8');
+  await db.pool.query(schema);
+  console.log('Database schema verified and migrated.');
+  await bot.launch();
+  console.log('BizziUsBot is running.');
+ }catch(e){console.error('Bot startup failed:',e);process.exit(1);}
+}
+startBot();
 process.once('SIGINT',()=>bot.stop('SIGINT'));process.once('SIGTERM',()=>bot.stop('SIGTERM'));
