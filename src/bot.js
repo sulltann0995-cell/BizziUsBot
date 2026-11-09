@@ -20,9 +20,9 @@ async function ask(ctx,state,prompt){states.set(ctx.from.id,state);return ctx.re
 async function requireBusiness(ctx){const data=await context(ctx);if(!data.business){await ctx.reply('Avval /start orqali biznes yarating yoki tanlang.');return null;}return data;}
 bot.start(async ctx=>{
  try{const {user}=await context(ctx);const list=await db.listBusinesses(user.id);
-  if(!list.length)return ask(ctx,'new_business','👋 Bizzant’ga xush kelibsiz!\n\nBiznesingiz nomini yuboring:');
+  if(!list.length)return ask(ctx,'new_business','👋 BizziUsBot’ga xush kelibsiz!\n\nBiznesingiz nomini yuboring:');
   const current=await db.currentBusiness(user.id);
-  if(current)return ctx.reply('🚀 Bizzant boshqaruv paneli\n🏢 '+current.name+'\n👤 Rol: '+current.role,menu());
+  if(current)return ctx.reply('🚀 BizziUsBot boshqaruv paneli\n🏢 '+current.name+'\n👤 Rol: '+current.role,menu());
   return ctx.reply('Biznesni tanlang:',Markup.inlineKeyboard([...list.map(b=>[Markup.button.callback(b.name,'select:'+b.id)]),[Markup.button.callback('➕ Yangi biznes','new_business')]]));
  }catch(e){console.error(e);return ctx.reply('Tizimda xatolik. Keyinroq urinib ko‘ring.');}
 });
@@ -97,5 +97,5 @@ bot.on('text',async ctx=>{
  }catch(e){console.error(e);return ctx.reply('Saqlashda xatolik. Ma’lumotlarni tekshirib qayta urinib ko‘ring.');}
 });
 bot.catch(e=>console.error('Telegram bot error:',e));
-bot.launch().then(()=>console.log('BizziUsBot (Bizzant) is running')).catch(e=>{console.error(e);process.exit(1);});
+bot.launch().then(()=>console.log('BizziUsBot (BizziUsBot) is running')).catch(e=>{console.error(e);process.exit(1);});
 process.once('SIGINT',()=>bot.stop('SIGINT'));process.once('SIGTERM',()=>bot.stop('SIGTERM'));
