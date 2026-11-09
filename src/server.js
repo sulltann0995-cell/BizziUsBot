@@ -1,14 +1,45 @@
 require('dotenv').config();
 const express=require('express');
 const helmet=require('helmet');
+const crypto=require('crypto');
+const path=require('path');
 const pool=require('./db');
+const db=require('./services');
 const app=express();
-app.use(helmet());
+app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:'1mb'}));
+app.use(express.static(path.join(__dirname,'../public')));
+function verifyTelegramInitData(initData){
+  if(typeof initData!=='string'||!initData||!process.env.BOT_TOKEN)return null;
+  const params=new URLSearchParams(initData);
+  const hash=params.get('hash');if(!hash)return null;
+  params.delete('hash');
+  const dataCheckString=[...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
+  const secret=crypto.createHmac('sha256','WebAppData').update(process.env.BOT_TOKEN).digest();
+  const calculated=crypto.createHmac('sha256',secret).update(dataCheckString).digest('hex');
+  const a=Buffer.from(calculated,'hex'),b=Buffer.from(hash,'hex');
+  if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return null;
+  const authDate=Number(params.get('auth_date'));
+  if(!Number.isFinite(authDate)||Math.abs(Date.now()/1000-authDate)>86400)return null;
+  try{const user=JSON.parse(params.get('user')||'null');return user&&user.id?user:null;}catch{return null;}
+}
 app.get('/api/health',async(_req,res)=>{
-  try{await pool.query('SELECT 1');res.json({status:'ok',project:'Bizzant',bot:'BizziUsBot',database:'connected'});}
-  catch(e){res.status(503).json({status:'error',project:'Bizzant',database:'disconnected'});}
+  try{await pool.query('SELECT 1');res.json({status:'ok',project:'BizziUsBot',database:'connected'});}
+  catch(e){res.status(503).json({status:'error',project:'BizziUsBot',database:'disconnected'});}
 });
-app.get('/',(_req,res)=>res.type('html').send(`<!doctype html><html lang="uz"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bizzant</title><style>*{box-sizing:border-box}body{margin:0;background:#090b10;color:#f5f7fb;font:16px Inter,system-ui,sans-serif;min-height:100vh;display:grid;place-items:center}.card{max-width:680px;margin:24px;padding:42px;border:1px solid #252a35;border-radius:24px;background:linear-gradient(145deg,#151923,#0d1017);box-shadow:0 24px 80px #0008}h1{font-size:42px;margin:0 0 8px;letter-spacing:-2px}b{color:#71e0b2}.muted{color:#a5adbb;line-height:1.7}.pill{display:inline-block;margin-top:20px;padding:10px 16px;border:1px solid #315e50;border-radius:999px;color:#8be6bf}</style><main class="card"><h1>Bizzant<b>.</b></h1><div class="muted">Your Business Assistant.</div><p class="muted">Mijozlar, buyurtmalar, mahsulotlar, qabullar va tushumlarni bir joydan boshqaring.</p><span class="pill">BizziUsBot · Business assistant</span></main></html>`));
+app.post('/api/auth',async(req,res)=>{
+  try{
+    const telegramUser=verifyTelegramInitData(req.body?.initData);
+    if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz yoki muddati tugagan. Mini Appni bot ichidan qayta oching.'});
+    const user=await db.upsertUser(telegramUser);
+    const business=await db.currentBusiness(user.id);
+    if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:null,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
+    const [summary,customers,catalog,orders,appointments]=await Promise.all([
+      db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
+    ]);
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,role:business.role},summary,customers,catalog,orders,appointments});
+  }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
+});
+app.get('/',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 const port=Number(process.env.PORT||3000);
-app.listen(port,()=>console.log('Bizzant API listening on '+port));
+app.listen(port,'0.0.0.0',()=>console.log('BizziUsBot web server listening on '+port));
