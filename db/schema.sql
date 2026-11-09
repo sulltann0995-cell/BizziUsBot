@@ -88,3 +88,8 @@ CREATE TABLE IF NOT EXISTS payments (
   paid_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS payments_business_date_idx ON payments(business_id, paid_at DESC);
+
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS region TEXT;
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS public_visible BOOLEAN NOT NULL DEFAULT TRUE;
+CREATE INDEX IF NOT EXISTS businesses_directory_idx ON businesses(public_visible, region, city, category);
