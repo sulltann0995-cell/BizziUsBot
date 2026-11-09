@@ -1,4 +1,4 @@
-name: Bizzant checks
+name: BizziUs checks
 on:
   push:
     branches: [main]
