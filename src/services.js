@@ -73,7 +73,8 @@ async function addStaffByTelegramId(businessId,telegramId,role) {
     await c.query('BEGIN');
     const {rows:userRows}=await c.query('SELECT id FROM users WHERE telegram_id=$1',[String(telegramId)]);
     if(!userRows.length)throw new Error('USER_NOT_FOUND');
-    await c.query('INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,$3) ON CONFLICT(business_id,user_id) DO UPDATE SET role=EXCLUDED.role',[businessId,userRows[0].id,role]);
+    const added = await c.query('INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,$3) ON CONFLICT(business_id,user_id) DO NOTHING',[businessId,userRows[0].id,role]);
+    if (added.rowCount === 0) throw new Error('ALREADY_MEMBER');
     await c.query('COMMIT');
     return true;
   }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
