@@ -23,7 +23,7 @@ async function ask(ctx,state,prompt){states.set(ctx.from.id,state);return ctx.re
 async function requireBusiness(ctx){const data=await context(ctx);if(!data.business){await ctx.reply('Avval /start orqali biznes yarating yoki tanlang.');return null;}return data;}
 bot.start(async ctx=>{
  try{const {user}=await context(ctx);const list=await db.listBusinesses(user.id);
-  if(!list.length)return ask(ctx,'new_business','👋 BizziUsBot’ga xush kelibsiz!\n\nBiznesingiz nomini yuboring:');
+  if(!list.length){states.set(ctx.from.id,'new_business');return ctx.reply('👋 BizziUsBot’ga xush kelibsiz!\n\nBiznesingizni ro‘yxatdan o‘tkazing yoki ilovani oching:',Markup.inlineKeyboard([[Markup.button.webApp('📱 Ilovani ochish',WEB_APP_URL)],[Markup.button.callback('➕ Biznes yaratish','new_business')]]));}
   const current=await db.currentBusiness(user.id);
   if(current)return ctx.reply('🚀 BizziUsBot boshqaruv paneli\n🏢 '+current.name+'\n👤 Rol: '+current.role,menu());
   return ctx.reply('Biznesni tanlang:',Markup.inlineKeyboard([...list.map(b=>[Markup.button.callback(b.name,'select:'+b.id)]),[Markup.button.callback('➕ Yangi biznes','new_business')]]));
