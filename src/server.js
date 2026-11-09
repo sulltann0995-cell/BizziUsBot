@@ -37,7 +37,7 @@ app.post('/api/auth',async(req,res)=>{
     const [summary,customers,catalog,orders,appointments]=await Promise.all([
       db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
     ]);
-    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,role:business.role},businesses,summary,customers,catalog,orders,appointments});
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username},business:{id:business.id,name:business.name,category:business.category,region:business.region,city:business.city,role:business.role},businesses,summary,customers,catalog,orders,appointments});
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
 });
 
