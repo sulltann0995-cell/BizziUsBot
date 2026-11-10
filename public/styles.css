@@ -192,3 +192,17 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .vertical-hero.sector-dentist .sector-3d-fallback{display:none!important;}
 .vertical-hero:not(.sector-dentist) #sector3dCanvas{display:none!important;}
 .vertical-hero .model-credit{display:block;grid-column:1/-1;font-size:8px;letter-spacing:.08em;color:rgba(190,205,215,.48);text-align:right;margin-top:-8px;}
+
+/* Ready-made downloaded GLB models: show WebGL canvas and hide emoji fallback */
+.vertical-hero.sector-barber #sector3dCanvas,
+.vertical-hero.sector-education #sector3dCanvas,
+.vertical-hero.sector-clinic #sector3dCanvas,
+.vertical-hero.sector-retail #sector3dCanvas,
+.vertical-hero.sector-restaurant #sector3dCanvas,
+.vertical-hero.sector-auto_service #sector3dCanvas{display:block!important;z-index:6!important;pointer-events:auto!important;}
+.vertical-hero.sector-barber .sector-3d-fallback,
+.vertical-hero.sector-education .sector-3d-fallback,
+.vertical-hero.sector-clinic .sector-3d-fallback,
+.vertical-hero.sector-retail .sector-3d-fallback,
+.vertical-hero.sector-restaurant .sector-3d-fallback,
+.vertical-hero.sector-auto_service .sector-3d-fallback{display:none!important;}
