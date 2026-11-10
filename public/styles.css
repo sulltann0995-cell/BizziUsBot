@@ -206,3 +206,8 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .vertical-hero.sector-retail .sector-3d-fallback,
 .vertical-hero.sector-restaurant .sector-3d-fallback,
 .vertical-hero.sector-auto_service .sector-3d-fallback{display:none!important;}
+
+/* Keep the creative caption below the model, fully readable */
+.vertical-hero.sector-scene .model-caption{bottom:5px!important;z-index:12!important;max-width:min(92%,480px);white-space:normal;line-height:1.35;}
+.vertical-hero.sector-scene .sector-3d-stage{padding-bottom:42px;box-sizing:border-box;}
+@media(max-width:640px){.vertical-hero.sector-scene .model-caption{bottom:4px!important;font-size:10px;padding:7px 11px;}.vertical-hero.sector-scene .sector-3d-stage{padding-bottom:40px;}}
