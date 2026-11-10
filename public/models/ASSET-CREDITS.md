@@ -13,3 +13,5 @@ The app loads these ready-made GLB assets locally from this folder. The app does
 | Auto service | auto-suv.glb.b64 | Kenney 3D car assets, 3d/car/suv.glb | CC0 1.0 |
 
 Binary models are stored as base64 text so they can be committed using the repository's text-file workflow. The browser decodes them and passes the GLB bytes to Three.js GLTFLoader.
+
+| Barber scissors | barber-scissors.glb.b64 | gelvinp/entombed, assets/models/prevention/scissors.glb | Upstream asset-level license needs verification before commercial redistribution |
