@@ -30,36 +30,30 @@ if(activeCategory==='dentist'){
   const toothLoader=new T.GLTFLoader();
   toothLoader.load('https://cdn.jsdelivr.net/gh/organui/teeth-3d@main/public/models/teeth.glb',gltf=>{
    const realModel=gltf.scene;
-   const boneIds=new Set(['FJ3375','FJ3269','FJ3289']);
    realModel.traverse(o=>{
-    const nodeText=[o.name||'',o.material?.name||''].join(' ').toUpperCase();
-    const ids=nodeText.match(/FJ\d+/g)||[];
-    if(ids.some(id=>boneIds.has(id))){o.visible=false;return;}
-    if(o.isMesh){
-     o.castShadow=true;o.receiveShadow=true;
-     const mats=Array.isArray(o.material)?o.material:[o.material];
-     for(const m of mats){
-      if(!m)continue;
-      const names=((o.name||'')+' '+(m.name||'')).toUpperCase();
-      if(/FJ1252|FJ1253|GUM|GINGIVA|MUCOSA/.test(names)){
-       m.color.set('#c72f50');m.roughness=.78;m.metalness=0;
-       if(m.emissive)m.emissive.set('#18030a');
-      }else if(/FJ\d+|TOOTH|ENAMEL|DENTIN/.test(names)){
-       m.color.set('#e9dfce');m.roughness=.68;m.metalness=0;
-       if(m.emissive)m.emissive.set('#000000');
-      }
-      if('envMapIntensity'in m)m.envMapIntensity=.15;
-      m.side=T.DoubleSide;m.needsUpdate=true;
+    if(!o.isMesh)return;
+    o.castShadow=true;o.receiveShadow=true;
+    const mats=Array.isArray(o.material)?o.material:[o.material];
+    for(const m of mats){
+     if(!m)continue;
+     const names=((o.name||'')+' '+(m.name||'')).toUpperCase();
+     if(/FJ1252|FJ1253|GUM|GINGIVA|MUCOSA/.test(names)){
+      m.color.set('#d92e52');m.roughness=.72;m.metalness=0;
+      if(m.emissive)m.emissive.set('#26050d');
+     }else if(/TOOTH|ENAMEL|DENTIN/.test(names)){
+      m.color.set('#fff0dc');m.roughness=.64;m.metalness=0;
+      if(m.emissive)m.emissive.set('#000000');
      }
+     if('envMapIntensity'in m)m.envMapIntensity=.2;
+     m.side=T.DoubleSide;m.needsUpdate=true;
     }
    });
-   // Reframe only the visible teeth and gums after removing all jaw bones.
    const bounds=new T.Box3().setFromObject(realModel);
    const size=bounds.getSize(new T.Vector3());
    const center=bounds.getCenter(new T.Vector3());
    realModel.position.sub(center);
    const maxDim=Math.max(size.x,size.y,size.z)||1;
-   realModel.scale.setScalar(2.05/maxDim);
+   realModel.scale.setScalar(1.75/maxDim);
    group.add(realModel);
   },undefined,error=>{console.warn('Dental GLB unavailable; original emoji fallback remains visible',error);});
  }else{console.warn('GLTFLoader unavailable; original emoji fallback remains visible');}
