@@ -33,7 +33,7 @@ if(activeCategory==='dentist'){
    const boneIds=new Set(['FJ3375','FJ3269','FJ3289']);
    realModel.traverse(o=>{
     const nodeText=[o.name||'',o.material?.name||''].join(' ').toUpperCase();
-    const ids=nodeText.match(/FJ\\d+/g)||[];
+    const ids=nodeText.match(/FJ\d+/g)||[];
     if(ids.some(id=>boneIds.has(id))){o.visible=false;return;}
     if(o.isMesh){
      o.castShadow=true;o.receiveShadow=true;
@@ -44,7 +44,7 @@ if(activeCategory==='dentist'){
       if(/FJ1252|FJ1253|GUM|GINGIVA|MUCOSA/.test(names)){
        m.color.set('#c72f50');m.roughness=.78;m.metalness=0;
        if(m.emissive)m.emissive.set('#18030a');
-      }else if(/FJ\\d+|TOOTH|ENAMEL|DENTIN/.test(names)){
+      }else if(/FJ\d+|TOOTH|ENAMEL|DENTIN/.test(names)){
        m.color.set('#e9dfce');m.roughness=.68;m.metalness=0;
        if(m.emissive)m.emissive.set('#000000');
       }
