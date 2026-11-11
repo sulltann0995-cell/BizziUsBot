@@ -65,8 +65,39 @@ if(activeCategory==='dentist'){
   return r.arrayBuffer();
  }).then(buffer=>{
   if(buffer.byteLength<84)throw new Error('STL fayli bo‘sh yoki shikastlangan');
-  if(!T.STLLoader)throw new Error('STLLoader yuklanmadi');
-  const geometry=new T.STLLoader().parse(buffer);
+  // Parse STL directly: this project does not ship Three.js STLLoader.
+  const view=new DataView(buffer);
+  let geometry;
+  const faceCount=view.getUint32(80,true);
+  const isBinary=84+faceCount*50===buffer.byteLength;
+  if(isBinary&&faceCount>0&&faceCount<2000000){
+   const positions=new Float32Array(faceCount*9);
+   const normals=new Float32Array(faceCount*9);
+   let p=0;
+   for(let face=0;face<faceCount;face++){
+    const off=84+face*50;
+    const nx=view.getFloat32(off,true),ny=view.getFloat32(off+4,true),nz=view.getFloat32(off+8,true);
+    for(let v=0;v<3;v++){
+     const q=off+12+v*12;
+     positions[p]=view.getFloat32(q,true);
+     positions[p+1]=view.getFloat32(q+4,true);
+     positions[p+2]=view.getFloat32(q+8,true);
+     normals[p]=nx;normals[p+1]=ny;normals[p+2]=nz;p+=3;
+    }
+   }
+   geometry=new T.BufferGeometry();
+   geometry.setAttribute('position',new T.BufferAttribute(positions,3));
+   geometry.setAttribute('normal',new T.BufferAttribute(normals,3));
+  }else{
+   const source=new TextDecoder().decode(buffer);
+   const matches=source.match(/vertex\\s+[-+0-9.eE]+\\s+[-+0-9.eE]+\\s+[-+0-9.eE]+/gi)||[];
+   if(!matches.length)throw new Error('STL formati aniqlanmadi');
+   const positions=new Float32Array(matches.length*3);
+   matches.forEach((line,i)=>{const nums=line.match(/[-+0-9.eE]+/g);positions.set(nums.map(Number),i*3)});
+   geometry=new T.BufferGeometry();
+   geometry.setAttribute('position',new T.BufferAttribute(positions,3));
+   geometry.computeVertexNormals();
+  }
   if(!geometry||!geometry.attributes||!geometry.attributes.position||!geometry.attributes.position.count)throw new Error('STL ichida 3D geometriya topilmadi');
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
