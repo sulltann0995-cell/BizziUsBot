@@ -197,6 +197,33 @@ if(activeCategory==='dentist'){
  });
 }
 
+
+else if(activeCategory==='education'){
+ const caption=document.querySelector('.sector-3d-stage .model-caption');
+ if(caption)caption.textContent='OPEN BOOK • LOADING';
+ loadSTLAsset('remeshy_print_50mm_1794411339500.stl').then(buffer=>{
+  if(buffer.byteLength<84)throw new Error('Ochiq kitob STL fayli bo‘sh yoki shikastlangan');
+  const geometry=parseSTLBuffer(buffer,T,'O‘quv markazi ochiq kitobi');
+  const bounds=geometry.boundingBox,size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3()),maxDim=Math.max(size.x,size.y,size.z);
+  if(!Number.isFinite(maxDim)||maxDim<=0)throw new Error('Kitob modeli o‘lchami noto‘g‘ri');
+  geometry.translate(-center.x,-center.y,-center.z);
+  // Keep the uploaded open-book geometry unchanged; apply a premium metallic-gold finish.
+  const gold=new T.MeshStandardMaterial({color:0xd4af37,metalness:.9,roughness:.2,side:T.DoubleSide});
+  const book=new T.Mesh(geometry,gold);
+  book.scale.setScalar(1.78/maxDim);
+  book.rotation.x=-Math.PI/2;
+  fitSTLCamera(geometry,1.78/maxDim,camera,stage);
+  book.castShadow=true;book.receiveShadow=true;
+  group.clear();group.add(book);
+  const goldRim=new T.PointLight(0xffd36b,1.35,6);
+  goldRim.position.set(1.7,1.1,2.5);scene.add(goldRim);
+  if(caption)caption.textContent='LEARNING HUB • GOLDEN OPEN BOOK';
+ }).catch(err=>{
+  console.error('Education book STL load failed:',err);
+  if(caption)caption.textContent='BOOK STL ERROR • '+(err.message||'Yuklanmadi');
+ });
+}
+
 else if(activeCategory==='auto_service'){
  const caption=document.querySelector('.sector-3d-stage .model-caption');
  if(caption)caption.textContent='V8 ENGINE • LOADING';
