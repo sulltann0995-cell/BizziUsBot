@@ -60,7 +60,7 @@ if(activeCategory==='dentist'){
 }else if(readyModelFiles[activeCategory]){if(T.GLTFLoader){fetch(readyModelFiles[activeCategory],{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Model file '+r.status);return r.text()}).then(encoded=>{const raw=atob(encoded.replace(/\s+/g,'')),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);new T.GLTFLoader().parse(bytes.buffer,'',gltf=>{const model=gltf.scene;const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());model.position.sub(center);const maxDim=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(1.85/maxDim);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=T.DoubleSide;o.material.needsUpdate=true;}}});group.add(model);},err=>console.warn('GLB parse failed',err));}).catch(err=>console.warn('Ready-made model unavailable; fallback remains',err));}else{console.warn('GLTFLoader missing; fallback remains');}}else if(activeCategory==='barber'){
  if(T.GLTFLoader){
   const loader=new T.GLTFLoader();
-  loader.load('https://cdn.3dassets.dev/assets/34595/v1/model.glb',gltf=>{
+  loader.load('https://cdn.3dassets.dev/assets/16799/v1/model.glb',gltf=>{
    const realModel=gltf.scene;
    realModel.traverse(o=>{
     if(!o.isMesh)return;
@@ -87,7 +87,7 @@ if(activeCategory==='dentist'){
    realModel.scale.setScalar(1.72/maxDim);
    realModel.rotation.y=-.16;
    group.add(realModel);
-  },undefined,error=>console.warn('Premium barber clipper GLB unavailable',error));
+  },undefined,error=>console.warn('CC0 barber clipper GLB unavailable',error));
  }else{console.warn('GLTFLoader unavailable; barber clipper model cannot load');}
 }
 else if(activeCategory==='education'){for(let i=0;i<3;i++){const book=box(.92,.18,.62,[material(0x6650ae),material(0x367d9c),material(0xb36e48)][i],0,-.42+i*.22);book.rotation.z=(i-1)*-.07;box(.07,.16,.64,white,-.43,-.42+i*.22,.01)}box(.78,.06,.55,white,0,.18);sphere(.16,main,0,.48,0,1,.55,.8)}
