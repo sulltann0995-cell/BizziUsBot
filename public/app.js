@@ -59,37 +59,8 @@ if(activeCategory==='dentist'){
  }else{console.warn('GLTFLoader unavailable; original emoji fallback remains visible');}
 }else if(readyModelFiles[activeCategory]){if(T.GLTFLoader){fetch(readyModelFiles[activeCategory],{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Model file '+r.status);return r.text()}).then(encoded=>{const raw=atob(encoded.replace(/\s+/g,'')),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);new T.GLTFLoader().parse(bytes.buffer,'',gltf=>{const model=gltf.scene;const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());model.position.sub(center);const maxDim=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(1.85/maxDim);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=T.DoubleSide;o.material.needsUpdate=true;}}});group.add(model);},err=>console.warn('GLB parse failed',err));}).catch(err=>console.warn('Ready-made model unavailable; fallback remains',err));}else{console.warn('GLTFLoader missing; fallback remains');}}else if(activeCategory==='barber'){
  const caption=document.querySelector('.sector-3d-stage .model-caption');
- if(caption)caption.textContent='PROFESSIONAL CORDLESS CLIPPER';
- // Local Three.js model: no external CDN, so it renders even when third-party hosts fail.
- const tool=new T.Group();
- const bodyMat=new T.MeshStandardMaterial({color:0x17191d,metalness:.42,roughness:.26});
- const gripMat=new T.MeshStandardMaterial({color:0x292d33,metalness:.12,roughness:.42});
- const steelMat=new T.MeshStandardMaterial({color:0xb9c2ca,metalness:.88,roughness:.2});
- const goldMat=new T.MeshStandardMaterial({color:0xc79a48,metalness:.82,roughness:.23});
- const blackMat=new T.MeshStandardMaterial({color:0x08090b,metalness:.18,roughness:.3});
- const add=(geo,mat,x,y,z,rx=0,ry=0,rz=0)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;tool.add(m);return m;};
- // Ergonomic cordless housing, tapered grip and rounded-looking shoulder.
- add(new T.CylinderGeometry(.205,.255,1.02,48),bodyMat,0,-.12,0,0,0,0);
- add(new T.SphereGeometry(.205,32,24),bodyMat,0,.39,0);
- add(new T.SphereGeometry(.245,32,24),bodyMat,0,-.62,0);
- add(new T.BoxGeometry(.39,.52,.31),gripMat,0,-.12,.012);
- // Side control and charging indicator.
- add(new T.BoxGeometry(.105,.19,.035),blackMat,.205,-.1,.02,0,0,.08);
- add(new T.SphereGeometry(.027,16,12),goldMat,.232,.19,.035);
- // Metal cutter head across the top, with visible teeth.
- add(new T.BoxGeometry(.52,.105,.35),steelMat,0,.54,0);
- add(new T.BoxGeometry(.48,.055,.31),goldMat,0,.615,0);
- for(let n=0;n<13;n++) add(new T.BoxGeometry(.027,.105,.055),steelMat,-.228+n*.038,.685,0);
- // Two dark blade slots and front screw details.
- for(let n=0;n<5;n++) add(new T.BoxGeometry(.018,.014,.22),blackMat,-.16+n*.08,.575,.18);
- for(const x of [-.19,.19]) add(new T.CylinderGeometry(.025,.025,.018,20),goldMat,x,.57,.19,Math.PI/2,0,0);
- // Rear charging socket and subtle grip ribs.
- add(new T.CylinderGeometry(.075,.075,.035,24),blackMat,0,-.72,.02);
- for(let n=0;n<4;n++) add(new T.BoxGeometry(.31,.018,.29),gripMat,0,-.34+n*.105,.012);
- tool.rotation.z=-.12;
- tool.rotation.y=-.34;
- tool.scale.setScalar(1.12);
- group.add(tool);
+ if(caption)caption.textContent='REALISTIC CLIPPER MODEL NOT INSTALLED';
+ // Do not substitute hand-built toy geometry for a real product model.
 }
 else if(activeCategory==='education'){for(let i=0;i<3;i++){const book=box(.92,.18,.62,[material(0x6650ae),material(0x367d9c),material(0xb36e48)][i],0,-.42+i*.22);book.rotation.z=(i-1)*-.07;box(.07,.16,.64,white,-.43,-.42+i*.22,.01)}box(.78,.06,.55,white,0,.18);sphere(.16,main,0,.48,0,1,.55,.8)}
 else if(activeCategory==='clinic'){box(.42,1.2,.24,white);box(1.2,.42,.24,white);const halo=mesh(new T.TorusGeometry(.9,.025,8,64),accent,0,0,-.2);halo.rotation.y=.3}
