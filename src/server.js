@@ -11,7 +11,7 @@ app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:'1mb'}));
 app.use('/vendor',express.static(path.join(__dirname,'../node_modules/three/build')));
 app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/three/examples/js')));
-const fs=require('fs');
+
 const STL_ASSETS=new Set([
  'remeshy_print_50mm_1794376766321.stl',
  'remeshy_print_50mm_1794380088703.stl',
