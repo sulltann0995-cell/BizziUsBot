@@ -27,7 +27,7 @@ app.get('/api/models/:filename',(req,res)=>{
   if(err||!stat.isFile())return res.status(404).json({error:'STL fayli serverda topilmadi: '+filename});
   res.setHeader('Content-Type','model/stl');
   res.setHeader('Content-Length',String(stat.size));
-  res.setHeader('Cache-Control','public, max-age=3600');
+  res.setHeader('Cache-Control','public, max-age=86400, stale-while-revalidate=604800');
   res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method==='HEAD')return res.end();
   const stream=fs.createReadStream(filePath);
