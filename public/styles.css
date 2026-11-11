@@ -211,3 +211,9 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .vertical-hero.sector-scene .model-caption{bottom:5px!important;z-index:12!important;max-width:min(92%,480px);white-space:normal;line-height:1.35;}
 .vertical-hero.sector-scene .sector-3d-stage{padding-bottom:42px;box-sizing:border-box;}
 @media(max-width:640px){.vertical-hero.sector-scene .model-caption{bottom:4px!important;font-size:10px;padding:7px 11px;}.vertical-hero.sector-scene .sector-3d-stage{padding-bottom:40px;}}
+
+/* Premium thin-gold frame for barber creative captions */
+.vertical-hero.sector-barber .model-caption{border:1px solid rgba(212,175,55,.78)!important;box-shadow:0 0 13px rgba(212,175,55,.13),inset 0 0 7px rgba(212,175,55,.045);}
+
+/* Thin warm-copper frame for retail creative captions */
+.vertical-hero.sector-retail .model-caption{border:1px solid rgba(184,115,51,.82)!important;box-shadow:0 0 12px rgba(184,115,51,.12),inset 0 0 6px rgba(184,115,51,.04);}
