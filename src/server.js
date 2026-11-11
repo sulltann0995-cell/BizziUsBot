@@ -3,6 +3,7 @@ const express=require('express');
 const helmet=require('helmet');
 const crypto=require('crypto');
 const path=require('path');
+const fs=require('fs');
 const pool=require('./db');
 const db=require('./services');
 const app=express();
@@ -10,6 +11,28 @@ app.use(helmet({contentSecurityPolicy:false}));
 app.use(express.json({limit:'1mb'}));
 app.use('/vendor',express.static(path.join(__dirname,'../node_modules/three/build')));
 app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/three/examples/js')));
+const fs=require('fs');
+const STL_ASSETS=new Set([
+ 'remeshy_print_50mm_1794376766321.stl',
+ 'remeshy_print_50mm_1794380088703.stl',
+ 'remeshy_print_50mm_1794397149626.stl'
+]);
+app.get('/api/models/:filename',(req,res)=>{
+ const filename=String(req.params.filename||'');
+ if(!STL_ASSETS.has(filename))return res.sendStatus(404);
+ const filePath=path.join(__dirname,'../public/models',filename);
+ fs.stat(filePath,(err,stat)=>{
+  if(err||!stat.isFile())return res.status(404).json({error:'STL fayli serverda topilmadi: '+filename});
+  res.setHeader('Content-Type','model/stl');
+  res.setHeader('Content-Length',String(stat.size));
+  res.setHeader('Cache-Control','public, max-age=3600');
+  res.setHeader('X-Content-Type-Options','nosniff');
+  if(req.method==='HEAD')return res.end();
+  const stream=fs.createReadStream(filePath);
+  stream.on('error',e=>{console.error('STL stream error:',e);if(!res.headersSent)res.sendStatus(500);else res.destroy(e);});
+  stream.pipe(res);
+ });
+});
 app.use(express.static(path.join(__dirname,'../public')));
 function verifyTelegramInitData(initData){
   if(typeof initData!=='string'||!initData||!process.env.BOT_TOKEN)return null;
