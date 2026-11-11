@@ -58,21 +58,21 @@ if(activeCategory==='dentist'){
   },undefined,error=>{console.warn('Dental GLB unavailable; original emoji fallback remains visible',error);});
  }else{console.warn('GLTFLoader unavailable; original emoji fallback remains visible');}
 }else if(readyModelFiles[activeCategory]){if(T.GLTFLoader){fetch(readyModelFiles[activeCategory],{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Model file '+r.status);return r.text()}).then(encoded=>{const raw=atob(encoded.replace(/\s+/g,'')),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);new T.GLTFLoader().parse(bytes.buffer,'',gltf=>{const model=gltf.scene;const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());model.position.sub(center);const maxDim=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(1.85/maxDim);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=T.DoubleSide;o.material.needsUpdate=true;}}});group.add(model);},err=>console.warn('GLB parse failed',err));}).catch(err=>console.warn('Ready-made model unavailable; fallback remains',err));}else{console.warn('GLTFLoader missing; fallback remains');}}else if(activeCategory==='barber'){
- const clipper=new T.Group();group.add(clipper);
- const graphite=material(0xc5ced8,.72,.24),black=material(0x343d49,.62,.28),steel=material(0xf0f3f7,.82,.18),gold=material(0xe6ad45,.68,.22),red=material(0xe52f50,.5,.25);
- const body=mesh(new T.CylinderGeometry(.31,.37,1.28,48,1),graphite,0,-.02,0,clipper);body.scale.set(1.12,1,.78);body.rotation.z=-.13;
- const back=mesh(new T.SphereGeometry(.32,40,28),black,0,-.62,0,clipper);back.scale.set(1.05,.42,.78);back.rotation.z=-.13;
- const grip=mesh(new T.BoxGeometry(.32,.72,.035),black,0,-.08,.285,clipper);grip.rotation.z=-.13;
- const side=mesh(new T.BoxGeometry(.055,.82,.045),gold,.205,-.08,.30,clipper);side.rotation.z=-.13;
- const panel=mesh(new T.BoxGeometry(.22,.5,.035),red,0,-.12,.325,clipper);panel.rotation.z=-.13;
- const switchBase=mesh(new T.BoxGeometry(.13,.22,.07),black,0,.34,.31,clipper);switchBase.rotation.z=-.13;
- const switchTop=mesh(new T.BoxGeometry(.075,.12,.045),gold,0,.35,.36,clipper);switchTop.rotation.z=-.13;
- const neck=mesh(new T.CylinderGeometry(.23,.28,.18,40),black,0,.62,0,clipper);neck.rotation.z=-.13;
- const blade=mesh(new T.BoxGeometry(.88,.18,.38),gold,0,.77,0,clipper);blade.rotation.z=-.13;
- const bladeBase=mesh(new T.BoxGeometry(.78,.09,.37),black,0,.68,0,clipper);bladeBase.rotation.z=-.13;
- for(let i=0;i<11;i++){const tooth=mesh(new T.BoxGeometry(.05,.14,.38),steel,-.38+i*.076,.89,0,clipper);tooth.rotation.z=-.13}
- for(let z of [-.13,.13]){const screw=mesh(new T.CylinderGeometry(.035,.035,.018,20),gold,0,.78,z,clipper);screw.rotation.x=Math.PI/2}
- clipper.scale.setScalar(1.22);clipper.rotation.z=-.12;clipper.rotation.x=.12;clipper.rotation.y=-.28;
+ if(T.GLTFLoader){
+  const loader=new T.GLTFLoader();
+  loader.load('https://cdn.3dassets.dev/assets/16799/v1/model.glb',gltf=>{
+   const realModel=gltf.scene;
+   realModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=T.DoubleSide;o.material.needsUpdate=true;}}});
+   const bounds=new T.Box3().setFromObject(realModel);
+   const size=bounds.getSize(new T.Vector3());
+   const center=bounds.getCenter(new T.Vector3());
+   realModel.position.sub(center);
+   const maxDim=Math.max(size.x,size.y,size.z)||1;
+   realModel.scale.setScalar(1.85/maxDim);
+   realModel.rotation.y=-.12;
+   group.add(realModel);
+  },undefined,error=>console.warn('Ready-made barber clipper model unavailable',error));
+ }else{console.warn('GLTFLoader unavailable; barber clipper model cannot load');}
 }
 else if(activeCategory==='education'){for(let i=0;i<3;i++){const book=box(.92,.18,.62,[material(0x6650ae),material(0x367d9c),material(0xb36e48)][i],0,-.42+i*.22);book.rotation.z=(i-1)*-.07;box(.07,.16,.64,white,-.43,-.42+i*.22,.01)}box(.78,.06,.55,white,0,.18);sphere(.16,main,0,.48,0,1,.55,.8)}
 else if(activeCategory==='clinic'){box(.42,1.2,.24,white);box(1.2,.42,.24,white);const halo=mesh(new T.TorusGeometry(.9,.025,8,64),accent,0,0,-.2);halo.rotation.y=.3}
