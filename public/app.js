@@ -59,8 +59,30 @@ if(activeCategory==='dentist'){
  }else{console.warn('GLTFLoader unavailable; original emoji fallback remains visible');}
 }else if(readyModelFiles[activeCategory]){if(T.GLTFLoader){fetch(readyModelFiles[activeCategory],{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Model file '+r.status);return r.text()}).then(encoded=>{const raw=atob(encoded.replace(/\s+/g,'')),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);new T.GLTFLoader().parse(bytes.buffer,'',gltf=>{const model=gltf.scene;const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());model.position.sub(center);const maxDim=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(1.85/maxDim);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=T.DoubleSide;o.material.needsUpdate=true;}}});group.add(model);},err=>console.warn('GLB parse failed',err));}).catch(err=>console.warn('Ready-made model unavailable; fallback remains',err));}else{console.warn('GLTFLoader missing; fallback remains');}}else if(activeCategory==='barber'){
  const caption=document.querySelector('.sector-3d-stage .model-caption');
- if(caption)caption.textContent='REALISTIC CLIPPER MODEL NOT INSTALLED';
- // Do not substitute hand-built toy geometry for a real product model.
+ if(caption)caption.textContent='PREMIUM BARBER CLIPPER';
+ fetch('/models/remeshy_print_50mm_1794376766321.stl',{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('STL model '+r.status);return r.arrayBuffer()}).then(buffer=>{
+  if(buffer.byteLength<84)throw new Error('STL file is incomplete');
+  const view=new DataView(buffer),faces=view.getUint32(80,true);
+  if(!faces||84+faces*50>buffer.byteLength)throw new Error('Unsupported or damaged binary STL');
+  const vertices=new Float32Array(faces*9);let offset=84;
+  for(let f=0;f<faces;f++){
+   offset+=12;
+   for(let v=0;v<9;v++,offset+=4)vertices[f*9+v]=view.getFloat32(offset,true);
+   offset+=2;
+  }
+  const geometry=new T.BufferGeometry();
+  geometry.setAttribute('position',new T.BufferAttribute(vertices,3));
+  geometry.computeVertexNormals();geometry.computeBoundingBox();
+  const bounds=geometry.boundingBox,size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z)||1;
+  const body=new T.MeshStandardMaterial({color:0x171719,metalness:.82,roughness:.24});
+  const clipper=new T.Mesh(geometry,body);
+  clipper.position.sub(center);clipper.scale.setScalar(1.85/maxDim);clipper.castShadow=true;clipper.receiveShadow=true;group.add(clipper);
+  const edgeGeometry=new T.EdgesGeometry(geometry,38);
+  const goldEdges=new T.LineSegments(edgeGeometry,new T.LineBasicMaterial({color:0xd6a84f,transparent:true,opacity:.72}));
+  goldEdges.position.copy(clipper.position);goldEdges.scale.copy(clipper.scale);group.add(goldEdges);
+  if(caption)caption.textContent='BLACK & GOLD • REAL CLIPPER MODEL';
+ }).catch(err=>{console.error('Barber STL failed to load',err);if(caption)caption.textContent='CLIPPER MODEL LOAD ERROR';});
 }
 else if(activeCategory==='education'){for(let i=0;i<3;i++){const book=box(.92,.18,.62,[material(0x6650ae),material(0x367d9c),material(0xb36e48)][i],0,-.42+i*.22);book.rotation.z=(i-1)*-.07;box(.07,.16,.64,white,-.43,-.42+i*.22,.01)}box(.78,.06,.55,white,0,.18);sphere(.16,main,0,.48,0,1,.55,.8)}
 else if(activeCategory==='clinic'){box(.42,1.2,.24,white);box(1.2,.42,.24,white);const halo=mesh(new T.TorusGeometry(.9,.025,8,64),accent,0,0,-.2);halo.rotation.y=.3}
