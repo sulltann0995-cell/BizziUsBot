@@ -15,7 +15,8 @@ app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/t
 const STL_ASSETS=new Set([
  'remeshy_print_50mm_1794376766321.stl',
  'remeshy_print_50mm_1794380088703.stl',
- 'remeshy_print_50mm_1794397149626.stl'
+ 'remeshy_print_50mm_1794397149626.stl',
+ 'remeshy_print_50mm_1794411339500.stl'
 ]);
 app.get('/api/models/:filename',(req,res)=>{
  const filename=String(req.params.filename||'');
