@@ -99,3 +99,17 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS region TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS city TEXT;
 CREATE INDEX IF NOT EXISTS users_phone_idx ON users(phone);
+
+
+-- Live customer bookings and service scheduling
+ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 30 CHECK (duration_minutes BETWEEN 5 AND 600);
+ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS price_is_estimate BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES catalog_items(id) ON DELETE SET NULL;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_telegram_id BIGINT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 30 CHECK (duration_minutes BETWEEN 5 AND 600);
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS price NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (price >= 0);
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+CREATE INDEX IF NOT EXISTS appointments_customer_status_idx ON appointments(customer_telegram_id, status);
+CREATE INDEX IF NOT EXISTS appointments_business_active_time_idx ON appointments(business_id, starts_at) WHERE status NOT IN ('cancelled','rejected');
