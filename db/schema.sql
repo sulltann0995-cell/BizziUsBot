@@ -146,3 +146,44 @@ ALTER TABLE memberships ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT
 ALTER TABLE memberships ADD COLUMN IF NOT EXISTS display_name TEXT;
 ALTER TABLE memberships ADD COLUMN IF NOT EXISTS photo_url TEXT;
 CREATE INDEX IF NOT EXISTS memberships_active_business_idx ON memberships(business_id,active);
+
+
+-- Team invitations, staff schedules, assigned bookings and verified reviews.
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS staff_member_id UUID REFERENCES memberships(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS appointments_staff_time_idx ON appointments(staff_member_id,starts_at) WHERE staff_member_id IS NOT NULL AND status NOT IN ('cancelled','rejected');
+CREATE TABLE IF NOT EXISTS team_invites (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+ token_hash TEXT NOT NULL UNIQUE,
+ invited_by UUID NOT NULL REFERENCES users(id),
+ expires_at TIMESTAMPTZ NOT NULL,
+ claimed_by UUID REFERENCES users(id),
+ claimed_at TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS team_invites_business_idx ON team_invites(business_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS staff_schedules (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ membership_id UUID NOT NULL REFERENCES memberships(id) ON DELETE CASCADE,
+ weekday SMALLINT NOT NULL CHECK(weekday BETWEEN 0 AND 6),
+ start_time TIME,
+ end_time TIME,
+ day_off BOOLEAN NOT NULL DEFAULT FALSE,
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+ UNIQUE(membership_id,weekday),
+ CHECK(day_off OR (start_time IS NOT NULL AND end_time IS NOT NULL AND end_time>start_time))
+);
+CREATE TABLE IF NOT EXISTS staff_reviews (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ appointment_id UUID NOT NULL UNIQUE REFERENCES appointments(id) ON DELETE CASCADE,
+ business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+ membership_id UUID NOT NULL REFERENCES memberships(id) ON DELETE CASCADE,
+ customer_telegram_id BIGINT NOT NULL,
+ rating SMALLINT NOT NULL CHECK(rating BETWEEN 1 AND 5),
+ comment TEXT CHECK(comment IS NULL OR length(comment)<=1000),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS staff_reviews_member_idx ON staff_reviews(membership_id,created_at DESC);
+
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS specialty TEXT;
