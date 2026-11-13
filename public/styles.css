@@ -282,3 +282,44 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
 .client-booking-status .client-contact-btn{border:0;cursor:pointer;font-family:Manrope,sans-serif}
 .client-booking-status>small{display:block;color:#85818d;font-size:9px;margin-top:10px}
 @media(max-width:700px){.service-editor-grid,.client-service-grid{grid-template-columns:1fr}.service-add-form{grid-template-columns:1fr 1fr}.service-add-form input:first-child{grid-column:1/-1}.service-add-form .sector-create-btn{grid-column:1/-1;min-height:43px}.service-edit-card{grid-template-columns:1fr minmax(105px,.7fr) 26px}.client-service-card{grid-template-columns:38px 1fr auto}}
+
+
+/* Premium Instagram-story quick menu, shared by owner and customer views */
+.story-menu{--story-accent:var(--sector,#e84b66);--story-glow:var(--sector-soft,#e84b6626);position:relative;margin:0 0 20px;padding:15px 17px 13px;border:1px solid color-mix(in srgb,var(--story-accent) 24%,#302d38);border-radius:17px;background:radial-gradient(ellipse at 50% -45%,var(--story-glow),transparent 70%),linear-gradient(115deg,#15141b,#101016 70%);overflow:hidden;isolation:isolate}
+.story-menu:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 20%,color-mix(in srgb,var(--story-accent) 8%,transparent),transparent 80%);transform:translateX(-120%);animation:storyMenuSweep 9s ease-in-out infinite}
+.story-menu-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 2px 13px}
+.story-menu-kicker{font:700 8px 'DM Mono',monospace;letter-spacing:1.8px;color:var(--story-accent)}
+.story-menu-hint{font-size:9px;color:#777481}
+.story-menu-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(5px,2vw,17px);max-width:640px;margin:0 auto}
+.story-menu-item{--story-size:clamp(54px,8vw,74px);display:flex;min-width:0;flex-direction:column;align-items:center;gap:8px;padding:0 2px 3px;border:0;background:transparent;color:#e9e6ed;cursor:pointer;appearance:none;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.story-orbit{position:relative;width:var(--story-size);height:var(--story-size);display:grid;place-items:center;border-radius:50%;padding:3px;background:conic-gradient(from calc(var(--story-i)*27deg),var(--story-accent),#f7d9a3 22%,color-mix(in srgb,var(--story-accent) 30%,#fff) 43%,var(--story-accent) 67%,#554b66);box-shadow:0 0 0 1px #ffffff0b,0 7px 22px #0008,0 0 19px color-mix(in srgb,var(--story-accent) 17%,transparent);animation:storyRingBreath 4.8s ease-in-out infinite;animation-delay:calc(var(--story-i)*-.42s)}
+.story-orbit:before{content:"";position:absolute;inset:-4px;border:1px solid color-mix(in srgb,var(--story-accent) 35%,transparent);border-radius:50%;opacity:.55;transform:scale(.96);animation:storyHalo 3.8s ease-out infinite;animation-delay:calc(var(--story-i)*-.55s)}
+.story-orbit-inner{position:relative;width:100%;height:100%;display:grid;place-items:center;overflow:hidden;border:2px solid #17151d;border-radius:50%;background:radial-gradient(circle at 32% 20%,color-mix(in srgb,var(--story-accent) 28%,#292631),#121118 70%);box-shadow:inset 0 0 19px #0009}
+.story-orbit-inner:after{content:"";position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 39%,#ffffff1d 48%,transparent 57%);transform:translateX(-70%) rotate(18deg);animation:storyGlint 5.8s ease-in-out infinite;animation-delay:calc(var(--story-i)*-.65s)}
+.story-glyph{position:relative;z-index:1;font-size:clamp(22px,3vw,31px);line-height:1;color:#fff;text-shadow:0 0 13px color-mix(in srgb,var(--story-accent) 75%,transparent);animation:storyGlyphFloat 3.2s ease-in-out infinite;animation-delay:calc(var(--story-i)*-.35s)}
+.story-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(8px,1.4vw,10px);font-weight:750;letter-spacing:.05px;color:#d7d3dd;transition:color .2s,transform .2s}
+.story-menu-item:hover,.story-menu-item:focus-visible{transform:translateY(-5px) scale(1.035);outline:none}
+.story-menu-item:hover .story-orbit,.story-menu-item:focus-visible .story-orbit{box-shadow:0 0 0 1px #ffffff18,0 9px 26px #0009,0 0 28px color-mix(in srgb,var(--story-accent) 38%,transparent)}
+.story-menu-item:hover .story-label,.story-menu-item:focus-visible .story-label{color:#fff;transform:translateY(-1px)}
+.story-item-1 .story-glyph{animation-duration:2.5s}
+.story-item-2 .story-glyph{animation-name:storyGlyphTilt}
+.story-item-3 .story-glyph{animation-name:storyGlyphPulse}
+.story-item-4 .story-glyph{animation-duration:4.1s}
+.story-menu-barber{--story-accent:#e9ad63;--story-glow:#e9ad6320}
+.story-menu-dentist{--story-accent:#5bd6e5;--story-glow:#5bd6e51c}
+.story-menu-education{--story-accent:#a991ff;--story-glow:#a991ff20}
+.story-menu-clinic{--story-accent:#6cdda8;--story-glow:#6cdda81c}
+.story-menu-retail{--story-accent:#f0bd60;--story-glow:#f0bd601d}
+.story-menu-restaurant{--story-accent:#ff875e;--story-glow:#ff875e20}
+.story-menu-auto_service{--story-accent:#8ea6c9;--story-glow:#8ea6c91c}
+.story-menu-other{--story-accent:#e86c83;--story-glow:#e86c831d}
+.story-menu-client{margin-top:0}
+@keyframes storyMenuSweep{0%,72%,100%{transform:translateX(-120%)}84%{transform:translateX(120%)}}
+@keyframes storyRingBreath{0%,100%{filter:saturate(.92);transform:translateY(0)}50%{filter:saturate(1.18);transform:translateY(-2px)}}
+@keyframes storyHalo{0%,100%{opacity:.22;transform:scale(.96)}50%{opacity:.7;transform:scale(1.06)}}
+@keyframes storyGlint{0%,62%,100%{transform:translateX(-80%) rotate(18deg)}78%{transform:translateX(80%) rotate(18deg)}}
+@keyframes storyGlyphFloat{0%,100%{transform:translateY(1px) rotate(-3deg)}50%{transform:translateY(-3px) rotate(3deg)}}
+@keyframes storyGlyphTilt{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes storyGlyphPulse{0%,100%{transform:scale(.94)}50%{transform:scale(1.12)}}
+@media(max-width:420px){.story-menu{padding:13px 9px 11px;margin-bottom:15px}.story-menu-heading{margin-bottom:12px}.story-menu-hint{font-size:8px}.story-menu-row{gap:3px}.story-menu-item{--story-size:clamp(48px,14vw,61px);gap:7px}.story-label{font-size:8px;letter-spacing:-.15px}}
+@media(prefers-reduced-motion:reduce){.story-menu:before,.story-orbit,.story-orbit:before,.story-orbit-inner:after,.story-glyph{animation:none!important}.story-menu-item{transition:none}}
