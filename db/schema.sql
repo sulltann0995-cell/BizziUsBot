@@ -118,3 +118,24 @@ CREATE INDEX IF NOT EXISTS appointments_business_active_time_idx ON appointments
 ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_status_check;
 ALTER TABLE appointments ADD CONSTRAINT appointments_status_check
  CHECK (status IN ('booked','pending','confirmed','rejected','on_way','arrived','done','completed','cancelled'));
+
+-- Seed service catalog exactly once for legacy businesses; owners may later remove all services.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS service_defaults_seeded BOOLEAN NOT NULL DEFAULT FALSE;
+INSERT INTO catalog_items(business_id,name,kind,price,duration_minutes,price_is_estimate)
+SELECT b.id,s.name,'service',s.price,s.duration,TRUE
+FROM businesses b
+CROSS JOIN LATERAL (
+  SELECT * FROM (VALUES
+    ('barber','Erkaklar soch turmagi',50000,45),('barber','Fade / skin fade',70000,60),('barber','Soqol tekislash',30000,25),('barber','Kompleks xizmat',90000,75),
+    ('dentist','Stomatolog ko‘rigi',80000,30),('dentist','Professional tozalash',250000,60),('dentist','Tish plombalash',200000,60),
+    ('clinic','Umumiy shifokor qabuli',100000,30),('clinic','UZI tekshiruvi',150000,30),('clinic','Laboratoriya tahlili',60000,20),
+    ('education','Sinov darsi',0,45),('education','Individual dars',100000,60),('education','Guruh darsi',50000,90),
+    ('restaurant','Stol bron qilish',0,60),('restaurant','Banket uchun konsultatsiya',0,30),
+    ('retail','Mahsulot konsultatsiyasi',0,20),('retail','Buyurtmani olib ketish',0,15),
+    ('auto_service','Kompyuter diagnostikasi',120000,30),('auto_service','Moy almashtirish',150000,45),('auto_service','Umumiy ko‘rik',100000,40),
+    ('other','Konsultatsiya',50000,30),('other','Asosiy xizmat',100000,60)
+  ) AS x(category,name,price,duration)
+) s
+WHERE b.category=s.category AND b.service_defaults_seeded=FALSE
+AND NOT EXISTS(SELECT 1 FROM catalog_items ci WHERE ci.business_id=b.id AND ci.kind='service');
+UPDATE businesses SET service_defaults_seeded=TRUE WHERE service_defaults_seeded=FALSE;
