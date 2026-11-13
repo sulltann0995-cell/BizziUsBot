@@ -50,6 +50,13 @@ function verifyTelegramInitData(initData){
   if(!Number.isFinite(authDate)||Math.abs(Date.now()/1000-authDate)>86400)return null;
   try{const user=JSON.parse(params.get('user')||'null');return user&&user.id?user:null;}catch{return null;}
 }
+
+async function sendTelegramMessage(chatId,text,replyMarkup){
+ if(!process.env.BOT_TOKEN||!chatId)return false;
+ try{const response=await fetch('https://api.telegram.org/bot'+process.env.BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:String(chatId),text,parse_mode:'HTML',reply_markup:replyMarkup})});const data=await response.json();if(!data.ok)console.error('Telegram notify failed:',data.description);return !!data.ok}catch(e){console.error('Telegram notify error:',e);return false}
+}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
 app.get('/api/health',async(_req,res)=>{
   try{await pool.query('SELECT 1');res.json({status:'ok',project:'BizziUsBot',database:'connected'});}
   catch(e){res.status(503).json({status:'error',project:'BizziUsBot',database:'disconnected'});}
@@ -147,6 +154,28 @@ app.post('/api/business/leave',async(req,res)=>{
     return res.json({ok:true});
   }catch(e){console.error('Business exit error:',e);return res.status(500).json({error:'Biznesdan chiqishda xatolik.'});}
 });
+
+app.get('/api/business/:id/public',async(req,res)=>{
+ try{if(!/^[0-9a-f-]{36}$/i.test(req.params.id))return res.status(400).json({error:'Biznes identifikatori noto‘g‘ri.'});const business=await db.getPublicBusiness(req.params.id);if(!business)return res.status(404).json({error:'Biznes topilmadi.'});res.json({business});}
+ catch(e){console.error('Public business profile:',e);res.status(500).json({error:'Biznes profilini yuklashda xatolik.'})}
+});
+app.post('/api/services/save',async(req,res)=>{
+ try{const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(telegramUser),businessId=String(req.body?.businessId||''),items=req.body?.items;if(!/^[0-9a-f-]{36}$/i.test(businessId)||!Array.isArray(items)||items.length>100)return res.status(400).json({error:'Xizmatlar ma’lumoti noto‘g‘ri.'});const services=await db.saveServiceCatalog(user.id,businessId,items);res.json({ok:true,services})}
+ catch(e){if(e.message==='FORBIDDEN')return res.status(403).json({error:'Bu biznes xizmatlarini tahrirlash huquqi yo‘q.'});if(e.message.startsWith('INVALID_SERVICE'))return res.status(400).json({error:'Xizmat nomi, narxi yoki davomiyligi noto‘g‘ri.'});console.error('Save services:',e);res.status(500).json({error:'Xizmatlarni saqlashda xatolik.'})}
+});
+app.post('/api/bookings',async(req,res)=>{
+ try{const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(telegramUser);const {businessId,serviceId,name,phone,date,time}=req.body||{};const safeName=String(name||'').trim(),safePhone=String(phone||'').replace(/[^0-9+]/g,'');if(!/^[0-9a-f-]{36}$/i.test(String(businessId||''))||!/^[0-9a-f-]{36}$/i.test(String(serviceId||''))||safeName.length<2||safeName.length>80||!/^\+?998\d{9}$/.test(safePhone)||!/^\d{4}-\d{2}-\d{2}$/.test(String(date||''))||!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time||'')))return res.status(400).json({error:'Bron ma’lumotlarini to‘g‘ri kiriting.'});const result=await db.createCustomerBooking(user,businessId,serviceId,safeName,safePhone,date,time);const booking=result.booking;const dateLabel=new Date(booking.starts_at).toLocaleString('uz-UZ',{timeZone:'Asia/Tashkent'});for(const owner of result.owners){const text='🔔 <b>YANGI BRON SO‘ROVI</b>\n\n🏢 '+escapeHtml(result.businessName)+'\n👤 '+escapeHtml(safeName)+'\n📞 '+escapeHtml(safePhone)+'\n✂️ '+escapeHtml(result.serviceName)+'\n🗓 '+escapeHtml(dateLabel)+'\n💰 '+new Intl.NumberFormat('uz-UZ').format(Number(booking.price))+' UZS\n\nBronni tasdiqlang yoki rad eting.';await sendTelegramMessage(owner.telegram_id,text,{inline_keyboard:[[{text:'✅ Qabul qilish',callback_data:'book:confirmed:'+booking.id},{text:'✖️ Rad etish',callback_data:'book:rejected:'+booking.id}]]})}res.json({ok:true,booking:{id:booking.id,status:booking.status,service_name:booking.service_name,starts_at:booking.starts_at,price:booking.price,duration_minutes:booking.duration_minutes},notificationSent:result.owners.length>0})}
+ catch(e){if(e.message==='INVALID_TIME')return res.status(400).json({error:'Sana yoki vaqt noto‘g‘ri yoki o‘tib ketgan.'});if(e.message==='SLOT_TAKEN')return res.status(409).json({error:'Bu vaqt band. Boshqa vaqtni tanlang.'});if(e.message==='SERVICE_NOT_FOUND')return res.status(404).json({error:'Xizmat topilmadi yoki faol emas.'});console.error('Create booking:',e);res.status(500).json({error:'Bron yaratishda xatolik.'})}
+});
+app.post('/api/bookings/status',async(req,res)=>{
+ try{const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(telegramUser),bookingId=String(req.body?.bookingId||''),status=String(req.body?.status||''),asOwner=!!req.body?.asOwner;if(!/^[0-9a-f-]{36}$/i.test(bookingId))return res.status(400).json({error:'Bron identifikatori noto‘g‘ri.'});const result=await db.updateBookingStatus({bookingId,userId:user.id,status,asOwner});const b=result.booking;const msg={confirmed:'✅ <b>BRON TASDIQLANDI</b>\nBiznes: '+escapeHtml(result.businessName),rejected:'❌ <b>BRON RAD ETILDI</b>\nBiznes: '+escapeHtml(result.businessName),on_way:'🚗 <b>MIJOZ YO‘LDA</b>\nMijoz: '+escapeHtml(b.customer_name)+'\nTelefon: '+escapeHtml(b.customer_phone),arrived:'📍 <b>MIJOZ YETIB KELDI</b>\n'+escapeHtml(b.customer_name),cancelled:'⚠️ <b>BRON BEKOR QILINDI</b>\n'+escapeHtml(b.customer_name),completed:'🎉 <b>XIZMAT YAKUNLANDI</b>'}[status];if(asOwner&&b.customer_telegram_id)await sendTelegramMessage(b.customer_telegram_id,msg);if(!asOwner)for(const owner of result.owners)await sendTelegramMessage(owner.telegram_id,msg);res.json({ok:true,booking:b})}
+ catch(e){if(['FORBIDDEN','BOOKING_NOT_FOUND','INVALID_TRANSITION','INVALID_STATUS'].includes(e.message))return res.status(e.message==='FORBIDDEN'?403:400).json({error:e.message==='FORBIDDEN'?'Bu bronni boshqarish huquqi yo‘q.':e.message==='BOOKING_NOT_FOUND'?'Bron topilmadi.':'Bron holatini bu tarzda o‘zgartirib bo‘lmaydi.'});console.error('Booking status:',e);res.status(500).json({error:'Bron holatini yangilashda xatolik.'})}
+});
+app.get('/api/customer/bookings',async(req,res)=>{
+ try{const telegramUser=verifyTelegramInitData(String(req.headers['x-telegram-init-data']||''));if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(telegramUser);const {rows}=await pool.query('SELECT a.id,a.service_name,a.starts_at,a.status,a.price,a.duration_minutes,b.name business_name,b.id business_id FROM appointments a JOIN businesses b ON b.id=a.business_id WHERE a.customer_telegram_id=$1 ORDER BY a.starts_at DESC LIMIT 50',[String(telegramUser.id)]);res.json({bookings:rows})}
+ catch(e){console.error('Customer bookings:',e);res.status(500).json({error:'Bronlarni yuklashda xatolik.'})}
+});
+
 app.get('/',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 const port=Number(process.env.PORT||3000);
 app.listen(port,'0.0.0.0',()=>console.log('BizziUsBot web server listening on '+port));
