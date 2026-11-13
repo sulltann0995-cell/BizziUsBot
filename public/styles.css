@@ -248,3 +248,37 @@ body[data-vertical="auto_service"] .art-icon{animation:gearTurn 7s linear infini
  .client-contact-btn{width:100%;justify-content:space-between}
  .client-business-meta{flex-direction:column;gap:7px}
 }
+
+
+/* Service pricing, booking and customer arrival prototype */
+.service-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:16px 0}
+.service-edit-card{position:relative;display:grid;grid-template-columns:1fr minmax(115px,.55fr) 28px;align-items:center;gap:12px;padding:15px;border:1px solid #302d38;border-radius:13px;background:linear-gradient(135deg,#19171f,#111117)}
+.service-edit-card strong,.client-service-copy strong{display:block;color:#f4f1f4;font-size:12px}
+.service-edit-card small,.client-service-copy small{display:block;color:#858390;font-size:10px;margin-top:5px}
+.service-edit-card small em{color:#d9ad6b;font-style:normal}
+.service-edit-card label{display:grid;gap:5px;color:#8f8c99;font-size:9px}
+.service-edit-card input,.service-add-form input,.booking-modal input,.booking-modal select{width:100%;min-width:0;padding:11px 12px;border:1px solid #393541;border-radius:9px;background:#0c0b11;color:#f6f4f7;font:500 12px Manrope, sans-serif;outline:none}
+.service-edit-card input:focus,.service-add-form input:focus,.booking-modal input:focus,.booking-modal select:focus{border-color:#ff5269;box-shadow:0 0 0 3px #ff52691b}
+.service-delete-btn{width:27px;height:27px;border:1px solid #49303a;border-radius:8px;background:#28151c;color:#ff7183;font-size:19px;cursor:pointer}
+.service-add-form{display:grid;grid-template-columns:1.5fr 1fr .7fr auto;gap:9px;padding:14px;border:1px dashed #423b49;border-radius:13px;background:#121117}
+.service-add-form .sector-create-btn{margin:0;white-space:nowrap;padding:0 14px}
+.client-service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:17px}
+.client-service-card{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:15px;border:1px solid #302d38;border-radius:13px;background:linear-gradient(135deg,#19171f,#101016);min-width:0}
+.client-service-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:#ff40591a;color:#ff7c8e;font-size:18px}
+.client-service-copy{min-width:0}
+.client-service-price{grid-column:2/4;color:#f2c27b;font-size:12px;font-weight:800}
+.client-book-btn{grid-column:1/4;display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 13px;border:1px solid #ff40594a;border-radius:9px;background:#ff405914;color:#ff8797;font:700 11px Manrope,sans-serif;cursor:pointer}
+.client-book-btn:hover{background:#ff405927;border-color:#ff5269}
+.booking-modal{max-height:min(88vh,780px);overflow:auto}
+.booking-modal form{display:grid;gap:8px;margin-top:16px}
+.booking-modal form label{color:#a7a3b0;font-size:10px;margin-top:4px}
+.booking-modal .sector-create-btn{margin-top:9px}
+.booking-demo-note{display:block;text-align:center;color:#777482;font-size:9px;margin-top:12px}
+.client-booking-status{margin-top:15px;padding:18px;border:1px solid #4b3c2a;border-radius:14px;background:linear-gradient(120deg,#211b16,#111117)}
+.booking-status-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.booking-pending{padding:5px 8px;border-radius:20px;background:#d9a84b1c;color:#e5b96e;font:700 8px 'DM Mono',monospace;letter-spacing:.7px}
+.client-booking-status>strong{display:block;color:#fff;font-size:14px}
+.client-booking-status p{color:#aaa5b1;font-size:10px}
+.client-booking-status .client-contact-btn{border:0;cursor:pointer;font-family:Manrope,sans-serif}
+.client-booking-status>small{display:block;color:#85818d;font-size:9px;margin-top:10px}
+@media(max-width:700px){.service-editor-grid,.client-service-grid{grid-template-columns:1fr}.service-add-form{grid-template-columns:1fr 1fr}.service-add-form input:first-child{grid-column:1/-1}.service-add-form .sector-create-btn{grid-column:1/-1;min-height:43px}.service-edit-card{grid-template-columns:1fr minmax(105px,.7fr) 26px}.client-service-card{grid-template-columns:38px 1fr auto}}
