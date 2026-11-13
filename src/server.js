@@ -68,10 +68,10 @@ app.post('/api/auth',async(req,res)=>{
     const user=await db.upsertUser(telegramUser);
     const [business,businesses]=await Promise.all([db.currentBusiness(user.id),db.listBusinesses(user.id)]);
     if(!business)return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username,account_role:user.account_role,phone:user.phone,region:user.region,city:user.city},business:null,businesses,summary:null,customers:[],catalog:[],orders:[],appointments:[]});
-    const [summary,customers,catalog,orders,appointments]=await Promise.all([
-      db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id)
+    const [summary,customers,catalog,orders,appointments,team]=await Promise.all([
+      db.summary(business.id),db.listCustomers(business.id),db.listCatalog(business.id),db.listOrders(business.id),db.listAppointments(business.id),db.listMembers(business.id,true)
     ]);
-    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username,account_role:user.account_role,phone:user.phone,region:user.region,city:user.city},business:{id:business.id,name:business.name,category:business.category,region:business.region,city:business.city,role:business.role},businesses,summary,customers,catalog,orders,appointments});
+    return res.json({user:{id:user.id,telegram_id:user.telegram_id,full_name:user.full_name,username:user.username,account_role:user.account_role,phone:user.phone,region:user.region,city:user.city},business:{id:business.id,name:business.name,category:business.category,region:business.region,city:business.city,role:business.role},businesses,summary,customers,catalog,orders,appointments,team});
   }catch(e){console.error('Mini App auth/data error:',e);return res.status(500).json({error:'Ma’lumotlarni yuklashda server xatoligi.'});}
 });
 
@@ -158,6 +158,24 @@ app.post('/api/business/leave',async(req,res)=>{
 app.get('/api/business/:id/public',async(req,res)=>{
  try{if(!/^[0-9a-f-]{36}$/i.test(req.params.id))return res.status(400).json({error:'Biznes identifikatori noto‘g‘ri.'});const business=await db.getPublicBusiness(req.params.id);if(!business)return res.status(404).json({error:'Biznes topilmadi.'});res.json({business});}
  catch(e){console.error('Public business profile:',e);res.status(500).json({error:'Biznes profilini yuklashda xatolik.'})}
+});
+app.post('/api/team/add',async(req,res)=>{
+ try{
+  const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});
+  const user=await db.upsertUser(telegramUser),businessId=String(req.body?.businessId||''),telegramId=String(req.body?.telegramId||'').trim(),name=String(req.body?.name||'').trim(),photoUrl=String(req.body?.photoUrl||'').trim();
+  if(!/^[0-9a-f-]{36}$/i.test(businessId)||!/^[0-9]{5,15}$/.test(telegramId)||name.length>80||photoUrl.length>500||(photoUrl&&!/^https:\/\//i.test(photoUrl)))return res.status(400).json({error:'Xodim ma’lumotlarini tekshiring.'});
+  const access=await pool.query("SELECT 1 FROM memberships WHERE business_id=$1 AND user_id=$2 AND role IN ('owner','admin')",[businessId,user.id]);if(!access.rowCount)return res.status(403).json({error:'Xodim qo‘shish huquqi yo‘q.'});
+  await db.addStaffByTelegramId(businessId,telegramId,name,photoUrl);res.json({ok:true,team:await db.listMembers(businessId,true)});
+ }catch(e){if(e.message==='USER_NOT_FOUND')return res.status(404).json({error:'Xodim avval BizziUs Mini Appni Telegram orqali ochib ro‘yxatdan o‘tishi kerak.'});console.error('Add team member:',e);res.status(500).json({error:'Xodimni qo‘shishda xatolik.'})}
+});
+app.post('/api/team/status',async(req,res)=>{
+ try{
+  const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});
+  const user=await db.upsertUser(telegramUser),businessId=String(req.body?.businessId||''),memberId=String(req.body?.memberId||''),active=!!req.body?.active;
+  if(!/^[0-9a-f-]{36}$/i.test(businessId)||!/^[0-9a-f-]{36}$/i.test(memberId))return res.status(400).json({error:'Xodim identifikatori noto‘g‘ri.'});
+  const ok=await db.setMemberActive(user.id,businessId,memberId,active);if(!ok)return res.status(403).json({error:'Bu xodimni boshqarish huquqi yo‘q.'});
+  res.json({ok:true,team:await db.listMembers(businessId,true)});
+ }catch(e){console.error('Team status:',e);res.status(500).json({error:'Xodim holatini o‘zgartirishda xatolik.'})}
 });
 app.post('/api/services/save',async(req,res)=>{
  try{const telegramUser=verifyTelegramInitData(req.body?.initData);if(!telegramUser)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(telegramUser),businessId=String(req.body?.businessId||''),items=req.body?.items;if(!/^[0-9a-f-]{36}$/i.test(businessId)||!Array.isArray(items)||items.length>100)return res.status(400).json({error:'Xizmatlar ma’lumoti noto‘g‘ri.'});const services=await db.saveServiceCatalog(user.id,businessId,items);res.json({ok:true,services})}
