@@ -69,6 +69,18 @@ bot.action('members',async ctx=>{
  const list=rows.map(x=>'• '+x.full_name+' — '+x.role+' (ID: '+x.telegram_id+')').join('\n');
  return ctx.reply('👨‍💼 Jamoa:\n'+(list||'Xodimlar yo‘q.'),Markup.inlineKeyboard([[Markup.button.callback('➕ Xodim qo‘shish','add_staff')]]));
 });
+
+bot.action(/^book:(confirmed|rejected):([0-9a-f-]{36})$/i,async ctx=>{
+ try{
+  const {user}=await context(ctx);
+  const status=ctx.match[1],bookingId=ctx.match[2];
+  const result=await db.updateBookingStatus({bookingId,userId:user.id,status,asOwner:true});
+  await ctx.answerCbQuery(status==='confirmed'?'Bron tasdiqlandi':'Bron rad etildi');
+  const b=result.booking;
+  await ctx.editMessageReplyMarkup({inline_keyboard:[]}).catch(()=>{});
+  return ctx.reply((status==='confirmed'?'✅ Bron tasdiqlandi.':'❌ Bron rad etildi.')+'\n'+b.customer_name+' · '+b.service_name);
+ }catch(e){console.error('Booking callback:',e);return ctx.answerCbQuery(e.message==='FORBIDDEN'?'Ruxsat yo‘q':'Bronni yangilab bo‘lmadi',{show_alert:true})}
+});
 bot.action(/^summary:(day|month|year)$/,async ctx=>{
  try{
   const d=await requireBusiness(ctx);await ctx.answerCbQuery();if(!d)return;
