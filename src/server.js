@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express=require('express');
 const helmet=require('helmet');
+const compression=require('compression');
 const crypto=require('crypto');
 const path=require('path');
 const fs=require('fs');
@@ -8,9 +9,11 @@ const pool=require('./db');
 const db=require('./services');
 const app=express();
 app.use(helmet({contentSecurityPolicy:false}));
+// Compress JSON, JavaScript, CSS and SVG responses to reduce mobile transfer time.
+app.use(compression({threshold:1024,level:6}));
 app.use(express.json({limit:'1mb'}));
-app.use('/vendor',express.static(path.join(__dirname,'../node_modules/three/build')));
-app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/three/examples/js')));
+app.use('/vendor',express.static(path.join(__dirname,'../node_modules/three/build'),{maxAge:'7d',etag:true}));
+app.use('/vendor-examples',express.static(path.join(__dirname,'../node_modules/three/examples/js'),{maxAge:'7d',etag:true}));
 
 const STL_ASSETS=new Set([
  'remeshy_print_50mm_1794376766321.stl',
@@ -35,7 +38,7 @@ app.get('/api/models/:filename',(req,res)=>{
   stream.pipe(res);
  });
 });
-app.use(express.static(path.join(__dirname,'../public')));
+app.use(express.static(path.join(__dirname,'../public'),{etag:true,lastModified:true,maxAge:'1d',setHeaders(res,filePath){if(filePath.endsWith('index.html')){res.setHeader('Cache-Control','no-cache');return;}res.setHeader('Cache-Control','public, max-age=86400, stale-while-revalidate=604800');}}));
 function verifyTelegramInitData(initData){
   if(typeof initData!=='string'||!initData||!process.env.BOT_TOKEN)return null;
   const params=new URLSearchParams(initData);
