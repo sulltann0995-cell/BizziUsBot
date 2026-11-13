@@ -113,3 +113,8 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS price NUMERIC(14,2) NOT NULL D
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 CREATE INDEX IF NOT EXISTS appointments_customer_status_idx ON appointments(customer_telegram_id, status);
 CREATE INDEX IF NOT EXISTS appointments_business_active_time_idx ON appointments(business_id, starts_at) WHERE status NOT IN ('cancelled','rejected');
+
+-- Booking lifecycle states
+ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_status_check;
+ALTER TABLE appointments ADD CONSTRAINT appointments_status_check
+ CHECK (status IN ('booked','pending','confirmed','rejected','on_way','arrived','done','completed','cancelled'));
