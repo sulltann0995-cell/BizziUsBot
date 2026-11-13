@@ -139,3 +139,10 @@ CROSS JOIN LATERAL (
 WHERE b.category=s.category AND b.service_defaults_seeded=FALSE
 AND NOT EXISTS(SELECT 1 FROM catalog_items ci WHERE ci.business_id=b.id AND ci.kind='service');
 UPDATE businesses SET service_defaults_seeded=TRUE WHERE service_defaults_seeded=FALSE;
+
+
+-- Employee profiles and reversible deactivation.
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS photo_url TEXT;
+CREATE INDEX IF NOT EXISTS memberships_active_business_idx ON memberships(business_id,active);
