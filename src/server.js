@@ -173,7 +173,7 @@ app.post('/api/team/profile',async(req,res)=>{
  }catch(e){console.error('Team profile:',e);res.status(500).json({error:'Profilni saqlab bo‘lmadi.'})}
 });
 app.post('/api/team/schedule',async(req,res)=>{
- try{const u=verifyTelegramInitData(req.body?.initData);if(!u)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(u),businessId=String(req.body?.businessId||''),memberId=String(req.body?.memberId||''),days=req.body?.days;if(!Array.isArray(days)||days.length!==7||days.some((d,i)=>d.weekday!==i||typeof d.dayOff!=='boolean'||(!d.dayOff&&(!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.end)||d.end<=d.start))))return res.status(400).json({error:'Haftalik jadval noto‘g‘ri.'});await db.saveStaffSchedule(user.id,businessId,memberId,days);res.json({ok:true});
+ try{const u=verifyTelegramInitData(req.body?.initData);if(!u)return res.status(401).json({error:'Telegram sessiyasi yaroqsiz.'});const user=await db.upsertUser(u),businessId=String(req.body?.businessId||''),memberId=String(req.body?.memberId||''),days=req.body?.days;if(!Array.isArray(days)||days.length!==7||days.some((d,i)=>d.weekday!==(i+1)%7||typeof d.dayOff!=='boolean'||(!d.dayOff&&(!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.end)||d.end<=d.start))))return res.status(400).json({error:'Haftalik jadval noto‘g‘ri.'});await db.saveStaffSchedule(user.id,businessId,memberId,days);res.json({ok:true});
  }catch(e){if(e.message==='FORBIDDEN')return res.status(403).json({error:'Jadvalni tahrirlash huquqi yo‘q.'});console.error('Team schedule:',e);res.status(500).json({error:'Jadvalni saqlab bo‘lmadi.'})}
 });
 app.post('/api/team/review',async(req,res)=>{
