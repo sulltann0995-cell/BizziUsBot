@@ -1,127 +1,32 @@
 const pool = require('./db');
-
-async function upsertUser(from) {
-  const fullName = [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || 'Telegram user';
-  const { rows } = await pool.query(
-    `INSERT INTO users (telegram_id, username, full_name)
-     VALUES ($1,$2,$3)
-     ON CONFLICT (telegram_id) DO UPDATE SET username=EXCLUDED.username, full_name=EXCLUDED.full_name
-     RETURNING *`,
-    [String(from.id), from.username || null, fullName]
-  );
-  return rows[0];
-}
-async function updateUserProfile(userId,role,name,phone,region,city) {
-  const {rows}=await pool.query('UPDATE users SET account_role=$2,full_name=$3,phone=$4,region=$5,city=$6 WHERE id=$1 RETURNING id,telegram_id,username,full_name,account_role,phone,region,city',[userId,role,name,phone,region,city]);return rows[0];
-}
-async function listBusinesses(userId) {
-  const { rows } = await pool.query(
-    `SELECT b.id,b.name,b.category,b.region,b.city,m.role FROM memberships m
-     JOIN businesses b ON b.id=m.business_id WHERE m.user_id=$1 ORDER BY b.created_at`, [userId]
-  );
-  return rows;
-}
-async function createBusiness(user, name, category = 'other', region = null, city = null) {
-  const c = await pool.connect();
-  try {
-    await c.query('BEGIN');
-    const { rows } = await c.query('INSERT INTO businesses(name,category,created_by,region,city,phone) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[name,category,user.id,region,city,user.phone||null]);
-    await c.query("INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,'owner')",[rows[0].id,user.id]);
-    await c.query('UPDATE users SET selected_business_id=$1 WHERE id=$2',[rows[0].id,user.id]);
-    await c.query('COMMIT');
-    return rows[0];
-  } catch(e) { await c.query('ROLLBACK'); throw e; }
-  finally { c.release(); }
-}
-async function selectBusiness(userId,businessId) {
-  const {rowCount}=await pool.query('UPDATE users SET selected_business_id=$1 WHERE id=$2 AND EXISTS(SELECT 1 FROM memberships WHERE user_id=$2 AND business_id=$1)',[businessId,userId]);
-  return rowCount===1;
-}
-async function leaveBusiness(userId) {
-  const {rowCount}=await pool.query('UPDATE users SET selected_business_id=NULL WHERE id=$1',[userId]);
-  return rowCount===1;
-}
-async function currentBusiness(userId) {
-  const {rows}=await pool.query(`SELECT b.*,m.role FROM users u JOIN memberships m ON m.user_id=u.id JOIN businesses b ON b.id=m.business_id WHERE u.id=$1 AND b.id=u.selected_business_id`,[userId]);
-  return rows[0]||null;
-}
-async function addCustomer(businessId,name,phone) {
-  const {rows}=await pool.query('INSERT INTO customers(business_id,name,phone) VALUES($1,$2,$3) RETURNING *',[businessId,name,phone||null]);return rows[0];
-}
-async function listCustomers(businessId) {
-  const {rows}=await pool.query('SELECT name,phone,created_at FROM customers WHERE business_id=$1 ORDER BY created_at DESC LIMIT 15',[businessId]);return rows;
-}
-async function addCatalogItem(businessId,name,kind,price) {
-  const {rows}=await pool.query('INSERT INTO catalog_items(business_id,name,kind,price) VALUES($1,$2,$3,$4) RETURNING *',[businessId,name,kind,price]);return rows[0];
-}
-async function listCatalog(businessId) {
-  const {rows}=await pool.query('SELECT name,kind,price FROM catalog_items WHERE business_id=$1 AND active=true ORDER BY created_at DESC LIMIT 15',[businessId]);return rows;
-}
-async function addOrder(businessId,title,amount,userId) {
-  const {rows}=await pool.query('INSERT INTO orders(business_id,title,amount,created_by) VALUES($1,$2,$3,$4) RETURNING *',[businessId,title,amount,userId]);return rows[0];
-}
-async function listOrders(businessId) {
-  const {rows}=await pool.query('SELECT title,amount,status,created_at FROM orders WHERE business_id=$1 ORDER BY created_at DESC LIMIT 15',[businessId]);return rows;
-}
-async function addPayment(businessId,amount,method,note) {
-  const {rows}=await pool.query('INSERT INTO payments(business_id,amount,method,note) VALUES($1,$2,$3,$4) RETURNING *',[businessId,amount,method,note||null]);return rows[0];
-}
-async function addAppointment(businessId,service,dateText) {
-  const date=new Date(dateText);if(Number.isNaN(date.getTime()))throw new Error('Invalid date');
-  const {rows}=await pool.query('INSERT INTO appointments(business_id,service_name,starts_at) VALUES($1,$2,$3) RETURNING *',[businessId,service,date]);return rows[0];
-}
-async function listAppointments(businessId) {
-  const {rows}=await pool.query("SELECT service_name,starts_at,status FROM appointments WHERE business_id=$1 AND starts_at>=NOW()-INTERVAL '1 day' ORDER BY starts_at LIMIT 15",[businessId]);return rows;
-}
-async function addStaffByTelegramId(businessId,telegramId,role) {
-  if(!['admin','staff'].includes(role))throw new Error('Invalid role');
-  const c=await pool.connect();
-  try {
-    await c.query('BEGIN');
-    const {rows:userRows}=await c.query('SELECT id FROM users WHERE telegram_id=$1',[String(telegramId)]);
-    if(!userRows.length)throw new Error('USER_NOT_FOUND');
-    const added = await c.query('INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,$3) ON CONFLICT(business_id,user_id) DO NOTHING',[businessId,userRows[0].id,role]);
-    if (added.rowCount === 0) throw new Error('ALREADY_MEMBER');
-    await c.query('COMMIT');
-    return true;
-  }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
-}
-async function listMembers(businessId) {
-  const {rows}=await pool.query('SELECT u.full_name,u.telegram_id,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.business_id=$1 ORDER BY CASE m.role WHEN \'owner\' THEN 1 WHEN \'admin\' THEN 2 ELSE 3 END',[businessId]);return rows;
-}
-async function periodSummary(businessId,period) {
-  const unit=period==='year'?'year':period==='month'?'month':'day';
-  const [orders,payments,appointments]=await Promise.all([
-    pool.query(`SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at>=date_trunc($2,CURRENT_DATE) AND created_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval`,[businessId,unit]),
-    pool.query(`SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM payments WHERE business_id=$1 AND paid_at>=date_trunc($2,CURRENT_DATE) AND paid_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval`,[businessId,unit]),
-    pool.query(`SELECT COUNT(*)::int count FROM appointments WHERE business_id=$1 AND starts_at>=date_trunc($2,CURRENT_DATE) AND starts_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval AND status='booked'`,[businessId,unit])
-  ]);
-  return {orders:orders.rows[0],payments:payments.rows[0],appointments:appointments.rows[0]};
-}
-async function summary(businessId) {
-  const [o,p,a,c]=await Promise.all([
-    pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at::date=CURRENT_DATE",[businessId]),
-    pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM payments WHERE business_id=$1 AND paid_at::date=CURRENT_DATE",[businessId]),
-    pool.query("SELECT COUNT(*)::int count FROM appointments WHERE business_id=$1 AND starts_at::date=CURRENT_DATE AND status='booked'",[businessId]),
-    pool.query('SELECT COUNT(*)::int count FROM customers WHERE business_id=$1',[businessId])
-  ]);
-  return {orders:o.rows[0],payments:p.rows[0],appointments:a.rows[0],customers:c.rows[0]};
-}
-
-async function listDirectoryLocations(region=null) {
-  const regions=await pool.query("SELECT DISTINCT region FROM businesses WHERE public_visible=true AND region IS NOT NULL AND city IS NOT NULL ORDER BY region");
-  const cities=region?await pool.query("SELECT DISTINCT city FROM businesses WHERE public_visible=true AND region=$1 AND city IS NOT NULL ORDER BY city",[region]):{rows:[]};
-  return {regions:regions.rows.map(x=>x.region),cities:cities.rows.map(x=>x.city)};
-}
-async function listPublicBusinesses(region,city,category=null) {
-  const values=[region,city];let where="public_visible=true AND region=$1 AND city=$2";
-  if(category){values.push(category);where+=" AND category=$3";}
-  const {rows}=await pool.query("SELECT id,name,category,region,city,phone FROM businesses WHERE "+where+" ORDER BY name LIMIT 100",values);
-  return rows;
-}
-async function updateBusinessLocation(userId,businessId,region,city) {
-  const {rowCount}=await pool.query("UPDATE businesses b SET region=$3,city=$4 WHERE b.id=$2 AND EXISTS(SELECT 1 FROM memberships m WHERE m.business_id=b.id AND m.user_id=$1 AND m.role IN ('owner','admin'))",[userId,businessId,region,city]);
-  return rowCount===1;
-}
-
-module.exports={pool,periodSummary,upsertUser,updateUserProfile,listBusinesses,createBusiness,listDirectoryLocations,listPublicBusinesses,updateBusinessLocation,selectBusiness,leaveBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,addStaffByTelegramId,listMembers,summary};
+const serviceSeeds={barber:[['Erkaklar soch turmagi',50000,45],['Fade / skin fade',70000,60],['Soqol tekislash',30000,25],['Kompleks xizmat',90000,75]],dentist:[['Stomatolog ko‘rigi',80000,30],['Professional tozalash',250000,60],['Tish plombalash',200000,60]],clinic:[['Umumiy shifokor qabuli',100000,30],['UZI tekshiruvi',150000,30],['Laboratoriya tahlili',60000,20]],education:[['Sinov darsi',0,45],['Individual dars',100000,60],['Guruh darsi',50000,90]],restaurant:[['Stol bron qilish',0,60],['Banket uchun konsultatsiya',0,30]],retail:[['Mahsulot konsultatsiyasi',0,20],['Buyurtmani olib ketish',0,15]],auto_service:[['Kompyuter diagnostikasi',120000,30],['Moy almashtirish',150000,45],['Umumiy ko‘rik',100000,40]],other:[['Konsultatsiya',50000,30],['Asosiy xizmat',100000,60]]};
+async function upsertUser(from){const fullName=[from.first_name,from.last_name].filter(Boolean).join(' ')||from.username||'Telegram user';const {rows}=await pool.query('INSERT INTO users(telegram_id,username,full_name) VALUES($1,$2,$3) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,full_name=EXCLUDED.full_name RETURNING *',[String(from.id),from.username||null,fullName]);return rows[0]}
+async function updateUserProfile(userId,role,name,phone,region,city){const {rows}=await pool.query('UPDATE users SET account_role=$2,full_name=$3,phone=$4,region=$5,city=$6 WHERE id=$1 RETURNING id,telegram_id,username,full_name,account_role,phone,region,city',[userId,role,name,phone,region,city]);return rows[0]}
+async function listBusinesses(userId){const {rows}=await pool.query('SELECT b.id,b.name,b.category,b.region,b.city,m.role FROM memberships m JOIN businesses b ON b.id=m.business_id WHERE m.user_id=$1 ORDER BY b.created_at',[userId]);return rows}
+async function seedServices(c,businessId,category){for(const [name,price,duration] of (serviceSeeds[category]||serviceSeeds.other))await c.query("INSERT INTO catalog_items(business_id,name,kind,price,duration_minutes,price_is_estimate) VALUES($1,$2,'service',$3,$4,TRUE)",[businessId,name,price,duration])}
+async function ensureDefaultServices(businessId,category){const {rows}=await pool.query("SELECT COUNT(*)::int count FROM catalog_items WHERE business_id=$1 AND kind='service' AND active=TRUE",[businessId]);if(!rows[0].count){const c=await pool.connect();try{await c.query('BEGIN');await seedServices(c,businessId,category);await c.query('COMMIT')}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}}
+async function createBusiness(user,name,category='other',region=null,city=null){const c=await pool.connect();try{await c.query('BEGIN');const {rows}=await c.query('INSERT INTO businesses(name,category,created_by,region,city,phone) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[name,category,user.id,region,city,user.phone||null]);await c.query("INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,'owner')",[rows[0].id,user.id]);await c.query('UPDATE users SET selected_business_id=$1 WHERE id=$2',[rows[0].id,user.id]);await seedServices(c,rows[0].id,category);await c.query('COMMIT');return rows[0]}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
+async function selectBusiness(userId,businessId){const {rowCount}=await pool.query('UPDATE users SET selected_business_id=$1 WHERE id=$2 AND EXISTS(SELECT 1 FROM memberships WHERE user_id=$2 AND business_id=$1)',[businessId,userId]);return rowCount===1}
+async function leaveBusiness(userId){const {rowCount}=await pool.query('UPDATE users SET selected_business_id=NULL WHERE id=$1',[userId]);return rowCount===1}
+async function currentBusiness(userId){const {rows}=await pool.query('SELECT b.*,m.role FROM users u JOIN memberships m ON m.user_id=u.id JOIN businesses b ON b.id=m.business_id WHERE u.id=$1 AND b.id=u.selected_business_id',[userId]);return rows[0]||null}
+async function addCustomer(businessId,name,phone){const {rows}=await pool.query('INSERT INTO customers(business_id,name,phone) VALUES($1,$2,$3) RETURNING *',[businessId,name,phone||null]);return rows[0]}
+async function listCustomers(businessId){const {rows}=await pool.query('SELECT name,phone,created_at FROM customers WHERE business_id=$1 ORDER BY created_at DESC LIMIT 15',[businessId]);return rows}
+async function addCatalogItem(businessId,name,kind,price,duration=30){const {rows}=await pool.query('INSERT INTO catalog_items(business_id,name,kind,price,duration_minutes,price_is_estimate) VALUES($1,$2,$3,$4,$5,FALSE) RETURNING *',[businessId,name,kind,price,duration]);return rows[0]}
+async function listCatalog(businessId){const {rows}=await pool.query('SELECT id,name,kind,price,duration_minutes,price_is_estimate FROM catalog_items WHERE business_id=$1 AND active=true ORDER BY kind,created_at DESC',[businessId]);return rows}
+async function saveServiceCatalog(userId,businessId,items){const c=await pool.connect();try{await c.query('BEGIN');const access=await c.query("SELECT 1 FROM memberships WHERE business_id=$1 AND user_id=$2 AND role IN ('owner','admin')",[businessId,userId]);if(!access.rowCount)throw new Error('FORBIDDEN');const keep=[];for(const x of items){const name=String(x.name||'').trim(),price=Number(x.price),duration=Number(x.duration_minutes||30);if(name.length<2||name.length>100||!Number.isFinite(price)||price<0||price>100000000000||!Number.isInteger(duration)||duration<5||duration>600)throw new Error('INVALID_SERVICE');if(x.id&&/^[0-9a-f-]{36}$/i.test(String(x.id))){const r=await c.query("UPDATE catalog_items SET name=$3,price=$4,duration_minutes=$5,price_is_estimate=FALSE,active=TRUE WHERE id=$1 AND business_id=$2 AND kind='service' RETURNING id",[x.id,businessId,name,price,duration]);if(!r.rowCount)throw new Error('INVALID_SERVICE_ID');keep.push(r.rows[0].id)}else{const r=await c.query("INSERT INTO catalog_items(business_id,name,kind,price,duration_minutes,price_is_estimate) VALUES($1,$2,'service',$3,$4,FALSE) RETURNING id",[businessId,name,price,duration]);keep.push(r.rows[0].id)}}if(keep.length)await c.query("UPDATE catalog_items SET active=FALSE WHERE business_id=$1 AND kind='service' AND active=TRUE AND NOT(id=ANY($2::uuid[]))",[businessId,keep]);else await c.query("UPDATE catalog_items SET active=FALSE WHERE business_id=$1 AND kind='service'",[businessId]);await c.query('COMMIT');return await listCatalog(businessId)}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
+async function getPublicBusiness(id){const {rows}=await pool.query('SELECT id,name,category,region,city,phone FROM businesses WHERE id=$1 AND public_visible=TRUE',[id]);if(!rows.length)return null;await ensureDefaultServices(id,rows[0].category);return {...rows[0],services:(await listCatalog(id)).filter(x=>x.kind==='service')}}
+async function addOrder(businessId,title,amount,userId){const {rows}=await pool.query('INSERT INTO orders(business_id,title,amount,created_by) VALUES($1,$2,$3,$4) RETURNING *',[businessId,title,amount,userId]);return rows[0]}
+async function listOrders(businessId){const {rows}=await pool.query('SELECT title,amount,status,created_at FROM orders WHERE business_id=$1 ORDER BY created_at DESC LIMIT 15',[businessId]);return rows}
+async function addPayment(businessId,amount,method,note){const {rows}=await pool.query('INSERT INTO payments(business_id,amount,method,note) VALUES($1,$2,$3,$4) RETURNING *',[businessId,amount,method,note||null]);return rows[0]}
+async function addAppointment(businessId,service,dateText){const date=new Date(dateText);if(Number.isNaN(date.getTime()))throw new Error('Invalid date');const {rows}=await pool.query('INSERT INTO appointments(business_id,service_name,starts_at) VALUES($1,$2,$3) RETURNING *',[businessId,service,date]);return rows[0]}
+async function listAppointments(businessId){const {rows}=await pool.query("SELECT id,service_name,starts_at,status,customer_name,customer_phone,price,duration_minutes,customer_telegram_id FROM appointments WHERE business_id=$1 AND starts_at>=NOW()-INTERVAL '1 day' ORDER BY starts_at LIMIT 100",[businessId]);return rows}
+async function createCustomerBooking(user,businessId,serviceId,name,phone,date,time){const startsAt=new Date(date+'T'+time+':00+05:00');if(!Number.isFinite(startsAt.getTime())||startsAt.getTime()<Date.now()-60000)throw new Error('INVALID_TIME');const c=await pool.connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(hashtext($1))',[String(businessId)]);const svc=await c.query("SELECT id,name,price,duration_minutes FROM catalog_items WHERE id=$1 AND business_id=$2 AND kind='service' AND active=TRUE",[serviceId,businessId]);if(!svc.rowCount)throw new Error('SERVICE_NOT_FOUND');const s=svc.rows[0],end=new Date(startsAt.getTime()+Number(s.duration_minutes)*60000);const conflict=await c.query("SELECT 1 FROM appointments WHERE business_id=$1 AND status NOT IN ('cancelled','rejected') AND starts_at < $3 AND starts_at + (duration_minutes * INTERVAL '1 minute') > $2 LIMIT 1",[businessId,startsAt,end]);if(conflict.rowCount)throw new Error('SLOT_TAKEN');const u=await c.query('SELECT id,telegram_id FROM users WHERE id=$1',[user.id]);if(!u.rowCount)throw new Error('USER_NOT_FOUND');let customer=await c.query('SELECT id FROM customers WHERE business_id=$1 AND phone=$2 ORDER BY created_at DESC LIMIT 1',[businessId,phone]);if(!customer.rowCount)customer=await c.query('INSERT INTO customers(business_id,name,phone) VALUES($1,$2,$3) RETURNING id',[businessId,name,phone]);const ins=await c.query("INSERT INTO appointments(business_id,customer_id,service_id,service_name,starts_at,status,customer_name,customer_phone,customer_telegram_id,duration_minutes,price) VALUES($1,$2,$3,$4,$5,'pending',$6,$7,$8,$9,$10) RETURNING *",[businessId,customer.rows[0].id,serviceId,s.name,startsAt,name,phone,u.rows[0].telegram_id,s.duration_minutes,s.price]);const owners=await c.query("SELECT u.telegram_id,u.full_name FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.business_id=$1 AND m.role IN ('owner','admin')",[businessId]);const biz=await c.query('SELECT name FROM businesses WHERE id=$1',[businessId]);await c.query('COMMIT');return {booking:ins.rows[0],owners:owners.rows,businessName:biz.rows[0]?.name,serviceName:s.name}}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
+async function updateBookingStatus({bookingId,userId,status,asOwner=false}){const ownerAllowed=['confirmed','rejected','completed'],customerAllowed=['on_way','arrived','cancelled'];if(!(asOwner?ownerAllowed:customerAllowed).includes(status))throw new Error('INVALID_STATUS');const c=await pool.connect();try{await c.query('BEGIN');const b=await c.query('SELECT a.*,b.name business_name FROM appointments a JOIN businesses b ON b.id=a.business_id WHERE a.id=$1 FOR UPDATE',[bookingId]);if(!b.rowCount)throw new Error('BOOKING_NOT_FOUND');const row=b.rows[0];if(asOwner){const access=await c.query("SELECT 1 FROM memberships WHERE business_id=$1 AND user_id=$2 AND role IN ('owner','admin')",[row.business_id,userId]);if(!access.rowCount)throw new Error('FORBIDDEN');if(status==='confirmed'&&row.status!=='pending'||status==='rejected'&&row.status!=='pending'||status==='completed'&&!['confirmed','on_way','arrived'].includes(row.status))throw new Error('INVALID_TRANSITION')}else{const u=await c.query('SELECT telegram_id FROM users WHERE id=$1',[userId]);if(!u.rowCount||String(u.rows[0].telegram_id)!==String(row.customer_telegram_id))throw new Error('FORBIDDEN');if(status==='on_way'&&row.status!=='confirmed'||status==='arrived'&&row.status!=='on_way'||status==='cancelled'&&!['pending','confirmed'].includes(row.status))throw new Error('INVALID_TRANSITION')}const upd=await c.query('UPDATE appointments SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *',[bookingId,status]);const owners=await c.query("SELECT u.telegram_id FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.business_id=$1 AND m.role IN ('owner','admin')",[row.business_id]);await c.query('COMMIT');return {booking:upd.rows[0],businessName:row.business_name,owners:owners.rows}}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
+async function addStaffByTelegramId(businessId,telegramId,role){if(!['admin','staff'].includes(role))throw new Error('Invalid role');const c=await pool.connect();try{await c.query('BEGIN');const {rows:userRows}=await c.query('SELECT id FROM users WHERE telegram_id=$1',[String(telegramId)]);if(!userRows.length)throw new Error('USER_NOT_FOUND');const added=await c.query('INSERT INTO memberships(business_id,user_id,role) VALUES($1,$2,$3) ON CONFLICT(business_id,user_id) DO NOTHING',[businessId,userRows[0].id,role]);if(!added.rowCount)throw new Error('ALREADY_MEMBER');await c.query('COMMIT');return true}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
+async function listMembers(businessId){const {rows}=await pool.query("SELECT u.full_name,u.telegram_id,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.business_id=$1 ORDER BY CASE m.role WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END",[businessId]);return rows}
+async function periodSummary(businessId,period){const unit=period==='year'?'year':period==='month'?'month':'day';const [orders,payments,appointments]=await Promise.all([pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at>=date_trunc($2,CURRENT_DATE) AND created_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval",[businessId,unit]),pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM payments WHERE business_id=$1 AND paid_at>=date_trunc($2,CURRENT_DATE) AND paid_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval",[businessId,unit]),pool.query("SELECT COUNT(*)::int count FROM appointments WHERE business_id=$1 AND starts_at>=date_trunc($2,CURRENT_DATE) AND starts_at<date_trunc($2,CURRENT_DATE)+('1 '||$2)::interval AND status IN ('booked','confirmed','on_way','arrived')",[businessId,unit])]);return {orders:orders.rows[0],payments:payments.rows[0],appointments:appointments.rows[0]}}
+async function summary(businessId){const [o,p,a,c]=await Promise.all([pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM orders WHERE business_id=$1 AND created_at::date=CURRENT_DATE",[businessId]),pool.query("SELECT COUNT(*)::int count,COALESCE(SUM(amount),0) total FROM payments WHERE business_id=$1 AND paid_at::date=CURRENT_DATE",[businessId]),pool.query("SELECT COUNT(*)::int count FROM appointments WHERE business_id=$1 AND starts_at::date=CURRENT_DATE AND status IN ('booked','confirmed','on_way','arrived')",[businessId]),pool.query('SELECT COUNT(*)::int count FROM customers WHERE business_id=$1',[businessId])]);return {orders:o.rows[0],payments:p.rows[0],appointments:a.rows[0],customers:c.rows[0]}}
+async function listDirectoryLocations(region=null){const regions=await pool.query("SELECT DISTINCT region FROM businesses WHERE public_visible=true AND region IS NOT NULL AND city IS NOT NULL ORDER BY region");const cities=region?await pool.query("SELECT DISTINCT city FROM businesses WHERE public_visible=true AND region=$1 AND city IS NOT NULL ORDER BY city",[region]):{rows:[]};return {regions:regions.rows.map(x=>x.region),cities:cities.rows.map(x=>x.city)}}
+async function listPublicBusinesses(region,city,category=null){const values=[region,city];let where='public_visible=true AND region=$1 AND city=$2';if(category){values.push(category);where+=' AND category=$3'}const {rows}=await pool.query('SELECT id,name,category,region,city,phone FROM businesses WHERE '+where+' ORDER BY name LIMIT 100',values);return rows}
+async function updateBusinessLocation(userId,businessId,region,city){const {rowCount}=await pool.query("UPDATE businesses b SET region=$3,city=$4 WHERE b.id=$2 AND EXISTS(SELECT 1 FROM memberships m WHERE m.business_id=b.id AND m.user_id=$1 AND m.role IN ('owner','admin'))",[userId,businessId,region,city]);return rowCount===1}
+module.exports={pool,periodSummary,upsertUser,updateUserProfile,listBusinesses,createBusiness,ensureDefaultServices,listDirectoryLocations,listPublicBusinesses,getPublicBusiness,updateBusinessLocation,selectBusiness,leaveBusiness,currentBusiness,addCustomer,listCustomers,addCatalogItem,listCatalog,saveServiceCatalog,addOrder,listOrders,addPayment,addAppointment,listAppointments,createCustomerBooking,updateBookingStatus,addStaffByTelegramId,listMembers,summary};
