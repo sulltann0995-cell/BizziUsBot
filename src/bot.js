@@ -24,12 +24,26 @@ async function context(ctx){const user=await db.upsertUser(ctx.from);return{user
 async function ask(ctx,state,prompt){states.set(ctx.from.id,state);return ctx.reply(prompt,Markup.keyboard([['❌ Bekor qilish']]).resize());}
 async function requireBusiness(ctx){const data=await context(ctx);if(!data.business){await ctx.reply('Avval /start orqali biznes yarating yoki tanlang.');return null;}return data;}
 bot.start(async ctx=>{
- try{const {user}=await context(ctx);const payload=String(ctx.startPayload||'');if(payload.startsWith('team_')){const token=payload.slice(5);if(!/^[a-f0-9]{64}$/i.test(token))return ctx.reply('Taklif havolasi noto‘g‘ri.');const hash=require('crypto').createHash('sha256').update(token).digest('hex');try{await db.claimTeamInvite(user.id,hash);return ctx.reply('🎉 Siz BizziUs jamoasiga qo‘shildingiz!\n\nEndi shaxsiy profilingizni to‘ldiring:',Markup.inlineKeyboard([[Markup.button.webApp('👤 Profilimni ochish',WEB_APP_URL)]]));}catch(err){if(err.message==='INVITE_INVALID')return ctx.reply('Taklif havolasi muddati tugagan yoki avval ishlatilgan. Biznes egasidan yangi taklif so‘rang.');throw err;}}const list=await db.listBusinesses(user.id);
-  if(!list.length){states.set(ctx.from.id,'new_business');return ctx.reply('👋 BizziUsBot’ga xush kelibsiz!\n\nBiznesingizni ro‘yxatdan o‘tkazing yoki ilovani oching:',Markup.inlineKeyboard([[Markup.button.webApp('📱 Ilovani ochish',WEB_APP_URL)],[Markup.button.callback('➕ Biznes yaratish','new_business')]]));}
-  const current=await db.currentBusiness(user.id);
-  if(current)return ctx.reply('🚀 BizziUsBot boshqaruv paneli\n🏢 '+current.name+'\n👤 Rol: '+current.role,menu());
-  return ctx.reply('Biznesni tanlang:',Markup.inlineKeyboard([...list.map(b=>[Markup.button.callback(b.name,'select:'+b.id)]),[Markup.button.callback('➕ Yangi biznes','new_business')]]));
- }catch(e){console.error(e);return ctx.reply('Tizimda xatolik. Keyinroq urinib ko‘ring.');}
+ try{
+  const {user}=await context(ctx);
+  const payload=String(ctx.startPayload||'');
+  if(payload.startsWith('team_')){
+   const token=payload.slice(5);
+   if(!/^[a-f0-9]{64}$/i.test(token))return ctx.reply('Taklif havolasi noto‘g‘ri.');
+   const hash=require('crypto').createHash('sha256').update(token).digest('hex');
+   try{
+    await db.claimTeamInvite(user.id,hash);
+    return ctx.reply('🎉 Siz BizziUs jamoasiga qo‘shildingiz!\\n\\nProfilingizni Mini App orqali to‘ldiring:',Markup.inlineKeyboard([[Markup.button.webApp('📱 BizziUs ilovasini ochish',WEB_APP_URL)]]));
+   }catch(err){
+    if(err.message==='INVITE_INVALID')return ctx.reply('Taklif havolasi muddati tugagan yoki avval ishlatilgan. Biznes egasidan yangi taklif so‘rang.');
+    throw err;
+   }
+  }
+  return ctx.reply('👋 BizziUs’ga xush kelibsiz!\\n\\nBiznesingizni boshqarish va mijozlar bilan ishlash uchun ilovani oching.',Markup.inlineKeyboard([[Markup.button.webApp('📱 BizziUs ilovasini ochish',WEB_APP_URL)]]));
+ }catch(e){
+  console.error(e);
+  return ctx.reply('Tizimda xatolik. Keyinroq urinib ko‘ring.');
+ }
 });
 bot.command('menu',async ctx=>{const d=await requireBusiness(ctx);if(d)ctx.reply('🏢 '+d.business.name,menu());});
 bot.action(/^select:(.+)$/,async ctx=>{
